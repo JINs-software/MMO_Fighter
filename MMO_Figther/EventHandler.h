@@ -11,7 +11,7 @@ public:
 	}
 	void OnClientJoin(HostID remote) override {
 		CreateFighter(remote);
-		std::cout << "[OnClientJoin] host id: " << remote << ", CreateFighter completed!" << std::endl;
+		//std::cout << "[OnClientJoin] host id: " << remote << ", CreateFighter completed!" << std::endl;
 	}
 	bool OnClientDisconnect(HostID remote) override {
 		DeleteFighter(remote);

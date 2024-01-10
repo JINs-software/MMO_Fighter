@@ -26,6 +26,9 @@
       <Filter>Contents</Filter>
     </ClCompile>
     <ClCompile Include="ExceptionHandler.cpp" />
+    <ClCompile Include="GameObject.cpp">
+      <Filter>Contents</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="JNet">

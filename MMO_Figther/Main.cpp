@@ -1,3 +1,4 @@
+#include <conio.h>
 #include "JNetServer.h"
 #include "Configuration.h"
 
@@ -7,8 +8,6 @@
 #include "RPC/Proxy_FightGame.cpp"
 
 #pragma comment (lib, "winmm")
-
-#define SLEEP_TIME_MS 20
 
 void ConsoleLog() {
 	bool flag = false;
@@ -61,7 +60,14 @@ int main() {
 
 	timeBeginPeriod(1);
 	double loopStart = clock();
+	char ctrInput;
 	while (true) {
+		if (_kbhit()) {
+			ctrInput = _getch();
+			if (ctrInput == 'q' || ctrInput == 'Q') {
+				break;
+			}
+		}
 		jnetServer->FrameMove();
 
 		double loopEnd = clock();

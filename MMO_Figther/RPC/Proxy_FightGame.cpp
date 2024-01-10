@@ -15,7 +15,7 @@ namespace FightGameS2C {
 		buff << HP;
 		Send(remote, buff);
 
-		std::cout << "[CRT_CHARACTER] remote: " << remote << ", id: " << ID << ", dir: " << Direction << ", X: " << X << ", Y: " << Y << std::endl;
+		//std::cout << "[CRT_CHARACTER] remote: " << remote << ", id: " << ID << ", dir: " << Direction << ", X: " << X << ", Y: " << Y << std::endl;
 
 		return true;
 	}
@@ -32,7 +32,7 @@ namespace FightGameS2C {
 		buff << HP;
 		Send(remote, buff);
 
-		std::cout << "[CRT_OTHER_CHARACTER] remote: " << remote << ", id: " << ID << ", dir: " << Direction << ", X: " << X << ", Y: " << Y << std::endl;
+		//std::cout << "[CRT_OTHER_CHARACTER] remote: " << remote << ", id: " << ID << ", dir: " << Direction << ", X: " << X << ", Y: " << Y << std::endl;
 
 		return true;
 	}
@@ -59,7 +59,7 @@ namespace FightGameS2C {
 		buff << Y;
 		Send(remote, buff);
 
-		std::cout << "[MOVE_START] remote: " << remote << ", id: " << ID << ", dir: " << Direction << ", X: " << X << ", Y: " << Y << std::endl;
+		//std::cout << "[MOVE_START] remote: " << remote << ", id: " << ID << ", dir: " << Direction << ", X: " << X << ", Y: " << Y << std::endl;
 
 		return true;
 	}
@@ -75,7 +75,7 @@ namespace FightGameS2C {
 		buff << Y;
 		Send(remote, buff);
 
-		std::cout << "[MOVE_STOP] remote: " << remote << ", id: " << ID << ", dir: " << Direction << ", X: " << X << ", Y: " << Y << std::endl;
+		//std::cout << "[MOVE_STOP] remote: " << remote << ", id: " << ID << ", dir: " << Direction << ", X: " << X << ", Y: " << Y << std::endl;
 
 		return true;
 	}

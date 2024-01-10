@@ -1,5 +1,8 @@
 #pragma once
 
+#define DUMB_SPACE_DIV
+#define FIXED_GRID_SPACE_DIV
+
 #define dfPACKET_MOVE_DIR_LL					0
 #define dfPACKET_MOVE_DIR_LU					1
 #define dfPACKET_MOVE_DIR_UU					2
@@ -11,20 +14,14 @@
 
 #define SERVER_PORT 5000
 
-#define SLEEP_TIME_MS 20	// 1초당 50프레임 -> 20ms당 1프레임
+#define SLEEP_TIME_MS 40	// 20fps: 1초당 25프레임 -> 40ms당 1프레임
+							// 50fps: 1초당 50프레임 -> 20ms당 1프레임
 
 #define RECV_BUF_SIZE 10000
 #define SEND_BUF_SIZE 10000
 
 // 유효성 검사 숫자
 #define VALID_PACKET_NUM 0X89
-
-/*
-* [클라이언트 그리드 셀 길이 단위
-*/
-#define dfGridCell_Length 64
-#define dfGridCell_Col 12 // 윈도우 좌표 {0, 0} 기준 가로 방향 10개의 cell
-#define dfGridCell_Row 10 // 윈도우 좌표 {0, 0} 기준 세로 방향 8개의 cell
 
 /*
 * [화면 이동 영역]
@@ -38,10 +35,25 @@
 #define dfRANGE_MOVE_BOTTOM	6400
 
 /*
+* [클라이언트 그리드 셀 길이 단위
+*/
+#define dfGridCell_Length 64
+#define dfGridCell_Col 12 // 윈도우 좌표 {0, 0} 기준 가로 방향 10개의 cell
+#define dfGridCell_Row 10 // 윈도우 좌표 {0, 0} 기준 세로 방향 8개의 cell
+
+#define dfRANGE_GRID_TOP	0
+#define dfRANGE_GRID_BOTTOM	dfRANGE_MOVE_BOTTOM / dfGridCell_Length		// 0 ~ 100
+#define dfRANGE_GRID_LEFT	0
+#define dfRANGE_GRID_RIGHT	dfRANGE_MOVE_RIGHT / dfGridCell_Length		// 0 ~ 100
+
+/*
 * [프레임 당 이동 단위(50FPS 기준)
 */
-#define DELTA_X 3
-#define DELTA_Y 2
+#define DELTA_X 6 // 3
+#define DELTA_Y 4 // 2
+#define DELTA_X_50FPS 3
+#define DELTA_Y_50FPS 2
+#
 
 /*
 * [이동 오류체크 범위]
