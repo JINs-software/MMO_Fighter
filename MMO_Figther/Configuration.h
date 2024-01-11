@@ -1,6 +1,6 @@
 #pragma once
 
-#define DUMB_SPACE_DIV
+//#define DUMB_SPACE_DIV
 #define FIXED_GRID_SPACE_DIV
 
 #define dfPACKET_MOVE_DIR_LL					0

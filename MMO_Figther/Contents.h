@@ -26,7 +26,7 @@ void DeleteFromGrid(uint16_t Y, uint16_t X, HostID id);
 // 캐릭터 생성, 삭제 그리고 MOVE/ATTACK 시 주변 공간의 플레이어에 메시지 포워딩
 void FowardCRTMsg(stObjectInfo* newObject);
 void ForwardDmgMsg(stObjectInfo* attacker, stObjectInfo* target);
-void FowardMsgToNearClient(stObjectInfo* player, RpcID msgID);
+void ForwardMsgToNear(stObjectInfo* player, RpcID msgID);
 //-------------------------
 // 캐릭터 이동 중간 중간 관심 영역 변경
 // 새로운 관심 영역에는 CRT/MOVE 메시지 전송
