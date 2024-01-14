@@ -1,6 +1,7 @@
 #pragma once
 #include "Types.h"
 #include "Configuration.h"
+#include <ctime>
 
 struct stPoint {
 	uint16	usX;
@@ -21,6 +22,9 @@ struct stObjectInfo {
 
 	// [고정 크기 격자 방식]
 	stObjectInfo* prevGridObj = nullptr;
+
+	// [타임 아웃을 위한 시간 체크]
+	time_t lastEchoTime;
 };
 
 struct Grid {

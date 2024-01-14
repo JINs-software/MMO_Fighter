@@ -1,12 +1,22 @@
 #include "Contents.h"
+#include <ctime>
 
 extern FightGameS2C::Proxy g_Proxy;
 std::map<HostID, stObjectInfo*> gClientMap;
 std::vector<std::vector<stObjectInfo*>> gClientGrid(dfRANGE_MOVE_BOTTOM + 1, std::vector<stObjectInfo*>(dfRANGE_MOVE_RIGHT + 1, nullptr));
-std::set<HostID> gDeleteClientSet;
+std::map<HostID, bool> gDeleteClientSet;
 std::queue<stAttackWork> AtkWorkQueue;
 
 Grid gGrid(dfRANGE_MOVE_BOTTOM, dfRANGE_MOVE_RIGHT);
+
+// 전역의 타이머
+time_t gTime;
+std::multimap<time_t, HostID> gTimeMap;
+
+// 메모리 풀
+JiniPool ObjectPool(sizeof(stObjectInfo), 5000);
+
+//===================================================================================================================
 
 //////////////////////////////
 // 전송 관리(클라이언트 인접 정보들만 송신)
@@ -20,7 +30,6 @@ Grid gGrid(dfRANGE_MOVE_BOTTOM, dfRANGE_MOVE_RIGHT);
 // ATTACK3				(HostID remote, BYTE byCode, BYTE bySize, BYTE byType, uint32_t ID, BYTE Direction, uint16_t X, uint16_t Y);
 // DAMAGE				(HostID remote, BYTE byCode, BYTE bySize, BYTE byType, uint32_t attker, uint32_t target, BYTE targetHP);
 //////////////////////////////
-
 
 //////////////////////////////
 // 그리드 관리
@@ -604,9 +613,10 @@ void ForwardMsgToNear(stObjectInfo* object, Grid* grid, RpcID msgID) {
 		for (uint16_t cy = topCell; cy <= bottomCell; cy++) {
 			for (uint16_t cx = leftCell; cx <= rightCell; cx++) {
 				for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
-					if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
+					//if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
 						g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
-					}
+					//}
+					// => 클라이언트 동작 분석 결과 삭제 대상에도 delete 메시지를 보내주었어야 했음
 				}
 			}
 		}
@@ -708,7 +718,7 @@ void ForwardDmgMsg(stObjectInfo* attacker, stObjectInfo* target, Grid* grid) {
 	uint16 leftCellAttaker = 0;
 	uint16 rightCellAttaker = 0;
 
-	GetRangeCell(attacker->stPos, topCellAttaker, topCellAttaker, leftCellAttaker, rightCellAttaker);
+	GetRangeCell(attacker->stPos, topCellAttaker, bottomCellAttaker, leftCellAttaker, rightCellAttaker);
 
 	//uint16 topCellTarget;
 	//uint16 bottomCellTarget;
@@ -719,7 +729,7 @@ void ForwardDmgMsg(stObjectInfo* attacker, stObjectInfo* target, Grid* grid) {
 
 	for (uint16_t cy = topCellAttaker; cy <= bottomCellAttaker; cy++) {
 		for (uint16_t cx = leftCellAttaker; cx <= rightCellAttaker; cx++) {
-			for (stObjectInfo* nearPlayer = gClientGrid[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+			for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 				g_Proxy.DAMAGE(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_DAMAGE, attacker->uiID, target->uiID, target->byHP);
 			}
 		}
@@ -742,22 +752,29 @@ void SyncPosition(stObjectInfo* player) {
 stPoint GetRandomPosition() {
 	stPoint pos;
 	srand(time(NULL));
-	pos.usX = (rand() % (dfRANGE_MOVE_RIGHT - dfRANGE_MOVE_LEFT - 1)) + dfRANGE_MOVE_LEFT + 1;
-	pos.usY = (rand() % (dfRANGE_MOVE_BOTTOM - dfRANGE_MOVE_TOP - 1)) + dfRANGE_MOVE_TOP + 1;
+	//pos.usX = (rand() % (dfRANGE_MOVE_RIGHT - dfRANGE_MOVE_LEFT - 1)) + dfRANGE_MOVE_LEFT + 1;
+	//pos.usY = (rand() % (dfRANGE_MOVE_BOTTOM - dfRANGE_MOVE_TOP - 1)) + dfRANGE_MOVE_TOP + 1;
 
-	pos.usX %= 300;
-	pos.usY %= 300;
-
-
+	pos.usX = rand() % dfRANGE_MOVE_RIGHT + 1;
+	pos.usY = rand() % dfRANGE_MOVE_BOTTOM + 1;
 
 	return pos;
 }
 void CreateFighter(HostID hostID) {
+#ifdef  DEFAULT_POOL
 	stObjectInfo* newObject = new stObjectInfo();
+#endif //  DEFAULT_POOL
+#ifdef JINI_POOL
+	stObjectInfo* newObject = reinterpret_cast<stObjectInfo*>(ObjectPool.AllocMem());
+#endif // JINI_POOL
 	newObject->uiID = hostID;
 	newObject->stPos = GetRandomPosition();
 	newObject->byHP = dfDEAFAULT_INIT_HP;
 	newObject->byDir = rand() % 2 == 0 ? dfPACKET_MOVE_DIR_LL : dfPACKET_MOVE_DIR_RR;
+
+	// 전역 타이머로 초기화
+	newObject->lastEchoTime = gTime;
+	gTimeMap.insert({ gTime, hostID });
 
 	BYTE bodyLen = sizeof(newObject->uiID) + sizeof(newObject->byDir) + sizeof(newObject->stPos) + sizeof(newObject->byHP);
 	g_Proxy.CRT_CHARACTER(newObject->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_CRT_CHARACTER, newObject->uiID, newObject->byDir, newObject->stPos.usX, newObject->stPos.usY, newObject->byHP);
@@ -778,9 +795,9 @@ void CreateFighter(HostID hostID) {
 		ERROR_EXCEPTION_WINDOW(L"CreateFighter", L"gClientMap.find(hostID) != gClientMap.end()");
 	}
 }
-void DeleteFighter(HostID hostID) {
+void DeleteFighter(HostID hostID, bool netcoreSide) {
 	if (gDeleteClientSet.find(hostID) == gDeleteClientSet.end()) {
-		gDeleteClientSet.insert(hostID);
+		gDeleteClientSet.insert({ hostID, netcoreSide });
 	}
 }
 
@@ -788,6 +805,11 @@ void DeleteFighter(HostID hostID) {
 // 캐릭터 이동 및 중지
 //////////////////////////////
 void MoveFigter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y) {
+	// 캐릭터가 죽기 전 move 메시지가 전송됨을 확인(추측)
+	if (gClientMap.find(hostID) == gClientMap.end()) {
+		return;
+	}
+
 	stObjectInfo* player = gClientMap[hostID];
 	player->byDir = Direction;
 	player->bMoveFlag = true;
@@ -833,6 +855,11 @@ void MoveFigter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y) {
 #endif 
 }
 void StopFigther(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y) {
+	// 캐릭터가 죽기 전 move 메시지가 전송됨을 확인(추측)
+	if (gClientMap.find(hostID) == gClientMap.end()) {
+		return;
+	}
+
 	stObjectInfo* player = gClientMap[hostID];
 	player->byDir = Direction;
 	player->bMoveFlag = false;
@@ -880,6 +907,11 @@ void StopFigther(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y) {
 // 캐릭터 공격
 //////////////////////////////
 void AttackFighter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y, enAttackType atkType) {
+	// 캐릭터가 죽기 전 move 메시지가 전송됨을 확인(추측)
+	if (gClientMap.find(hostID) == gClientMap.end()) {
+		return;
+	}
+
 	stObjectInfo* player = gClientMap[hostID];
 	player->byDir = Direction;
 
@@ -940,6 +972,7 @@ void AttackFighter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y, enAtta
 #ifdef FIXED_GRID_SPACE_DIV
 		ForwardMsgToNear(player, &gGrid, FightGameS2C::RPC_ATTACK2);
 #endif
+		break;
 	}
 	case enAttackType::ATTACK3: {
 #ifdef DUMB_SPACE_DIV
@@ -948,6 +981,7 @@ void AttackFighter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y, enAtta
 #ifdef FIXED_GRID_SPACE_DIV
 		ForwardMsgToNear(player, &gGrid, FightGameS2C::RPC_ATTACK3);
 #endif
+		break;
 	}
 	}
 }
@@ -955,31 +989,76 @@ void AttackFighter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y, enAtta
 void ReceiveEcho(HostID hostID, uint32_t time)
 {
 	//std::cout << "[Echo] hostID: " << hostID << ", time: " << time << std::endl;
+	//time_t t = time;
+	//struct tm ltm;
+	//localtime_s(&ltm, &t);
+	//cout << "year: " << ltm.tm_year + 1900 << endl;
+	//cout << "month: " << ltm.tm_mon + 1 << endl;
+	//cout << "day: " << ltm.tm_mday << endl;
+	//cout << "hour: " << ltm.tm_hour << endl;
+	//cout << "min: " << ltm.tm_min << endl;
+	//cout << "sec: " << ltm.tm_sec << endl;
 	BYTE bodyLen = sizeof(time);
 	g_Proxy.ECHO(hostID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_ECHO, time);
+
+	// 타이머 갱신
+	if (gClientMap.find(hostID) != gClientMap.end()) {
+		stObjectInfo* client = gClientMap[hostID];
+		time_t beforeTime = client->lastEchoTime;
+		if (beforeTime != gTime) {
+			auto rangeIter = gTimeMap.equal_range(beforeTime);
+			for (auto iter = rangeIter.first; iter != rangeIter.second; iter++) {
+				if (iter->second == hostID) {
+					gTimeMap.erase(iter);
+					break;
+				}
+			}
+
+			client->lastEchoTime = gTime;
+			gTimeMap.insert({gTime, hostID});
+		}
+
+	}
 }
 
 //////////////////////////////
 // Batch Process
 //////////////////////////////
 void BatchDeleteClientWork() {
-	for (HostID hostID : gDeleteClientSet) {
+	for (auto delCleint : gDeleteClientSet) {
+		HostID hostID = delCleint.first;
+		bool netcoreSide = delCleint.second;
+
 		if (gClientMap.find(hostID) != gClientMap.end()) {
 			stObjectInfo* client = gClientMap[hostID];
 
-			ForwardMsgToNear(client, FightGameS2C::RPC_DEL_CHARACTER);
-
 			// 코어에 연결 종료 요청
-			g_Proxy.Disconnect(hostID);
+			if (!netcoreSide) {
+				g_Proxy.Disconnect(hostID);
+			}
 
+#ifdef DUMB_SPACE_DIV
+			ForwardMsgToNear(client, FightGameS2C::RPC_DEL_CHARACTER);
 			DeleteFromGrid(client->stPos.usY, client->stPos.usX, client->uiID);
+#endif
+#ifdef FIXED_GRID_SPACE_DIV
+			ForwardMsgToNear(client, &gGrid, FightGameS2C::RPC_DEL_CHARACTER);
+			gGrid.Delete(client);
+#endif 
+
+#ifdef DEFAULT_POOL
+			delete client;
+#endif // DEFAULT_POOL
+#ifdef JINI_POOL
+			ObjectPool.ReturnMem(reinterpret_cast<BYTE*>(client));
+#endif // JINI_POOL
+
 			gClientMap.erase(hostID);
 		}
 		else {
 			ERROR_EXCEPTION_WINDOW(L"BatchDeleteClientWork", L"gClientMap.find(hostID) == gClientMap.end()");
 		}
 	}
-
 	gDeleteClientSet.clear();
 }
 void AttackWork(HostID atkerID, HostID targetID, enAttackType atkType) {
@@ -1043,7 +1122,7 @@ void BatchAttackWork() {
 			ERROR_EXCEPTION_WINDOW(L"MAIN(공격 처리)", L"UNVALID ATK TYPE");
 		}
 
-
+#ifdef DUMB_SPACE_DIV
 		for (int32 y = -atkRangeY / 2; y <= atkRangeY / 2; y++) {
 			int32 targetY = static_cast<int32>(atkWork.usY) + y;
 			if (targetY >= dfRANGE_MOVE_TOP && targetY <= dfRANGE_MOVE_BOTTOM) {
@@ -1064,11 +1143,38 @@ void BatchAttackWork() {
 							}
 							objPtr = objPtr->nextGridObj;
 						}
-
 					}
 				}
 			}
 		}
+
+#endif
+#ifdef FIXED_GRID_SPACE_DIV
+		uint16 atkRangeTop = atkWork.usY < atkRangeY / 2 ? dfRANGE_MOVE_TOP : atkWork.usY - atkRangeY / 2;
+		uint16 atkRangeBottom = atkWork.usY + atkRangeY / 2 > dfRANGE_MOVE_BOTTOM ? dfRANGE_MOVE_BOTTOM : atkWork.usY + atkRangeY / 2;
+		uint16 atkRangeRight;
+		uint16 atkRangeLeft;
+		if (atkWork.byDir == dfPACKET_MOVE_DIR_LL) {
+			atkRangeRight = atkWork.usX;
+			atkRangeLeft = atkWork.usX < atkRangeX ? dfRANGE_MOVE_LEFT : atkWork.usX - atkRangeX;
+		}
+		else {
+			atkRangeRight = atkWork.usX + atkRangeX > dfRANGE_MOVE_RIGHT ? dfRANGE_MOVE_RIGHT : atkWork.usX + atkRangeX;
+			atkRangeLeft = atkWork.usX;
+		}
+
+		for (uint16 cy = atkRangeTop / dfGridCell_Length; cy <= atkRangeBottom / dfGridCell_Length; cy++) {
+			for (uint16 cx = atkRangeLeft / dfGridCell_Length; cx <= atkRangeRight / dfGridCell_Length; cx++) {
+				for (stObjectInfo* target = gGrid.cells[cy][cx]; target != nullptr; target = target->nextGridObj) {
+					if (atkWork.uiID != target->uiID) {
+						if (atkRangeTop <= target->stPos.usY && target->stPos.usY <= atkRangeBottom && atkRangeLeft <= target->stPos.usX && target->stPos.usX <= atkRangeRight) {
+							AttackWork(atkWork.uiID, target->uiID, atkWork.byType);
+						}
+					}
+				}
+			}
+		}
+#endif
 	}
 }
 void BatchMoveWork() {
@@ -1196,6 +1302,15 @@ void BatchMoveWork() {
 			GridResetInterestSpace(beforePos, object, &gGrid, true);
 			gGrid.Add(object);
 #endif 
+		}
+	}
+}
+
+void BatchTimeOutCheck() {
+	for (auto iter = gTimeMap.begin(); iter != gTimeMap.end(); iter++) {
+		if (iter->first + 30 >= gTime) {
+			// 삭제 처리...
+			// linger 옵션 설정
 		}
 	}
 }

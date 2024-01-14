@@ -35,13 +35,14 @@ void Grid::Delete(stObjectInfo* obj) {
 			stObjectInfo* objptr = cells[cellY][cellX]->nextGridObj;
 			while (objptr != nullptr) {
 				if (objptr == obj) {
-					objptr->prevGridObj = objptr->nextGridObj;
+					objptr->prevGridObj->nextGridObj = objptr->nextGridObj;
 					if (objptr->nextGridObj != nullptr) {
 						objptr->nextGridObj->prevGridObj = objptr->prevGridObj;
 					}
 					delFlag = true;
 					break;
 				}
+
 				objptr = objptr->nextGridObj;
 			}
 		}

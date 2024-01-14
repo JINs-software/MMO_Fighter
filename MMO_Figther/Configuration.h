@@ -3,6 +3,9 @@
 //#define DUMB_SPACE_DIV
 #define FIXED_GRID_SPACE_DIV
 
+//#define DEFAULT_POOL
+#define JINI_POOL
+
 #define dfPACKET_MOVE_DIR_LL					0
 #define dfPACKET_MOVE_DIR_LU					1
 #define dfPACKET_MOVE_DIR_UU					2

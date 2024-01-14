@@ -31,6 +31,9 @@ void ConsoleLog() {
 class FighterGameBatch : public JNetBatchProcess
 {
 	void BatchProcess() override {
+		// 전역 타이머 갱신
+		gTime = time(NULL);
+
 		//ConsoleLog();
 		BatchAttackWork();
 		BatchDeleteClientWork();
@@ -51,12 +54,14 @@ int main() {
 	jnetServer->AttachBatchProcess(&fightGameBatch);
 
 	stServerStartParam startParam;
-	startParam.IP = "127.0.0.1";
+	startParam.IP = "172.30.1.100";
 	startParam.Port = 20000;
 
 	jnetServer->Start(startParam);
 	std::cout << "Server Start!" << std::endl;
 
+	// 전역 타이머 작동 개시
+	gTime = time(NULL);
 
 	timeBeginPeriod(1);
 	double loopStart = clock();

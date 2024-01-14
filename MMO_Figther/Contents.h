@@ -13,10 +13,15 @@
 
 #include "ExceptionHandler.h"
 
+#include "JNetPool.h"
+
 extern std::map<HostID, stObjectInfo*> gClientMap;
 extern std::vector<std::vector<stObjectInfo*>> gClientGrid;
-extern std::set<HostID> gDeleteClientSet;
+extern std::map<HostID, bool> gDeleteClientSet;
 extern std::queue<stAttackWork> AtkWorkQueue;
+//extern JiniPool;
+
+extern time_t gTime;
 
 //=========================
 // 무식한 방식의 공간 분할
@@ -52,7 +57,7 @@ void ForwardDELMsg(stObjectInfo* object, Grid* grid);
 //////////////////////////////
 stPoint GetRandomPosition();
 void CreateFighter(HostID hostID);
-void DeleteFighter(HostID hostID);
+void DeleteFighter(HostID hostID, bool netcoreSide = false);
 
 //////////////////////////////
 // 캐릭터 이동 및 중지
@@ -78,3 +83,4 @@ void BatchDeleteClientWork();
 void AttackWork(HostID atkerID, HostID targetID, enAttackType atkType);
 void BatchAttackWork();
 void BatchMoveWork();
+void BatchTimeOutCheck();

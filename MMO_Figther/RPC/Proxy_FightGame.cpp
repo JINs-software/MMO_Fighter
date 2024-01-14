@@ -45,6 +45,8 @@ namespace FightGameS2C {
 		buff << ID;
 		Send(remote, buff);
 
+		//std::cout << "[CRT_DEL_CHARACTER] remote: " << remote << ", id: " << ID << std::endl;
+
 		return true;
 	}
 	bool Proxy::MOVE_START(HostID remote, BYTE byCode, BYTE bySize, BYTE byType, uint32_t ID, BYTE Direction, uint16_t X, uint16_t Y) {
