@@ -82,5 +82,5 @@ void ReceiveEcho(HostID hostID, uint32_t time);
 void BatchDeleteClientWork();
 void AttackWork(HostID atkerID, HostID targetID, enAttackType atkType);
 void BatchAttackWork();
-void BatchMoveWork();
+void BatchMoveWork(uint16 calibration = 0);
 void BatchTimeOutCheck();

@@ -39,6 +39,16 @@ class FighterGameBatch : public JNetBatchProcess
 		BatchDeleteClientWork();
 		BatchMoveWork();
 	}
+
+	void BatchProcess(uint16 calibration) override {
+		// 전역 타이머 갱신
+		gTime = time(NULL);
+
+		//ConsoleLog();
+		BatchAttackWork();
+		BatchDeleteClientWork();
+		BatchMoveWork(calibration);
+	}
 };
 FighterGameBatch fightGameBatch;
 FightGameS2C::Proxy g_Proxy;
@@ -54,7 +64,7 @@ int main() {
 	jnetServer->AttachBatchProcess(&fightGameBatch);
 
 	stServerStartParam startParam;
-	startParam.IP = "172.30.1.100";
+	startParam.IP = "127.0.0.1";
 	startParam.Port = 20000;
 
 	jnetServer->Start(startParam);
@@ -65,6 +75,7 @@ int main() {
 
 	timeBeginPeriod(1);
 	double loopStart = clock();
+	uint16 calibrationFrameCnt = 0;
 	char ctrInput;
 	while (true) {
 		if (_kbhit()) {
@@ -73,15 +84,19 @@ int main() {
 				break;
 			}
 		}
-		jnetServer->FrameMove();
+		jnetServer->FrameMove(calibrationFrameCnt);
 
 		double loopEnd = clock();
 		double loopDuration = (loopEnd - loopStart);
 		if (loopDuration > SLEEP_TIME_MS) { 
 			//ERROR_EXCEPTION_WINDOW(L"Main", L"loopDuration > SLEEP_TIME_MS");
+			calibrationFrameCnt = loopDuration / SLEEP_TIME_MS;
+
 			std::cout << "프레임 초과" << endl;
+			std::cout << "calibrationFrameCnt: " << calibrationFrameCnt << std::endl;
 		}
 		else {
+			calibrationFrameCnt = 0;
 			Sleep((double)SLEEP_TIME_MS - loopDuration);
 		}
 		loopStart = clock();
