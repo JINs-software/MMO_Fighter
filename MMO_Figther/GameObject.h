@@ -14,9 +14,14 @@ struct stObjectInfo {
 	stPoint stPos;
 	BYTE	byHP;
 
+#ifdef SYNC_TEST
+	stPoint beforePos;
+#endif // SYNC_TEST
+
+
 	// 서버가 이용하는 데이터
 	bool bMoveFlag = false;
-	bool bFirstMoveFlag = false;
+	//bool bFirstMoveFlag = false;
 
 	stObjectInfo* nextGridObj = nullptr;
 

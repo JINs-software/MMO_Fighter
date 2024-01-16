@@ -76,6 +76,7 @@ int main() {
 	timeBeginPeriod(1);
 	double loopStart = clock();
 	uint16 calibrationFrameCnt = 0;
+	double overTime = 0;
 	char ctrInput;
 	while (true) {
 		if (_kbhit()) {
@@ -90,10 +91,13 @@ int main() {
 		double loopDuration = (loopEnd - loopStart);
 		if (loopDuration > SLEEP_TIME_MS) { 
 			//ERROR_EXCEPTION_WINDOW(L"Main", L"loopDuration > SLEEP_TIME_MS");
-			calibrationFrameCnt = loopDuration / SLEEP_TIME_MS;
+			overTime += (loopDuration - SLEEP_TIME_MS);
+			calibrationFrameCnt = overTime / SLEEP_TIME_MS;
 
 			std::cout << "프레임 초과" << endl;
 			std::cout << "calibrationFrameCnt: " << calibrationFrameCnt << std::endl;
+
+			overTime -= (calibrationFrameCnt * SLEEP_TIME_MS);
 		}
 		else {
 			calibrationFrameCnt = 0;

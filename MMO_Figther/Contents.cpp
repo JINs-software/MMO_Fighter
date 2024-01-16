@@ -14,7 +14,7 @@ time_t gTime;
 std::multimap<time_t, HostID> gTimeMap;
 
 // 메모리 풀
-JiniPool ObjectPool(sizeof(stObjectInfo), 5000);
+JiniPool ObjectPool(sizeof(stObjectInfo), 7000);
 
 //===================================================================================================================
 
@@ -751,12 +751,18 @@ void SyncPosition(stObjectInfo* player) {
 //////////////////////////////
 stPoint GetRandomPosition() {
 	stPoint pos;
-	srand(time(NULL));
-	//pos.usX = (rand() % (dfRANGE_MOVE_RIGHT - dfRANGE_MOVE_LEFT - 1)) + dfRANGE_MOVE_LEFT + 1;
-	//pos.usY = (rand() % (dfRANGE_MOVE_BOTTOM - dfRANGE_MOVE_TOP - 1)) + dfRANGE_MOVE_TOP + 1;
+	//srand(time(NULL));
+	pos.usX = (rand() % (dfRANGE_MOVE_RIGHT - dfRANGE_MOVE_LEFT - 1)) + dfRANGE_MOVE_LEFT + 1;
+	pos.usY = (rand() % (dfRANGE_MOVE_BOTTOM - dfRANGE_MOVE_TOP - 1)) + dfRANGE_MOVE_TOP + 1;
 
-	pos.usX = rand() % dfRANGE_MOVE_RIGHT + 1;
-	pos.usY = rand() % dfRANGE_MOVE_BOTTOM + 1;
+	// Test
+	//pos.usX = rand(); 
+	//std::cout << "before posX: " << pos.usX << std::endl;
+	//pos.usX %= (64 * dfGridCell_Col);
+	//std::cout << "after  posX: " << pos.usX << std::endl;
+	//pos.usY = rand(); 
+	//pos.usY %= (64 * dfGridCell_Row);
+
 
 	return pos;
 }
@@ -771,6 +777,11 @@ void CreateFighter(HostID hostID) {
 	newObject->stPos = GetRandomPosition();
 	newObject->byHP = dfDEAFAULT_INIT_HP;
 	newObject->byDir = rand() % 2 == 0 ? dfPACKET_MOVE_DIR_LL : dfPACKET_MOVE_DIR_RR;
+
+#ifdef SYNC_TEST
+	newObject->beforePos = newObject->stPos;
+#endif // SYNC_TEST
+
 	
 	/***** 중요 결함 *****/
 	// 객체 풀을 통해서 객체 메모리를 할당받고 있다.
@@ -783,7 +794,7 @@ void CreateFighter(HostID hostID) {
 	// 위와 같은 초기화가 이루어지지 않는다.
 	// 결국 따로 초기화하든, placement_new를 호출해주어야 한다.
 	newObject->bMoveFlag = false;
-	newObject->bFirstMoveFlag = false;
+	//newObject->bFirstMoveFlag = false;
 	newObject->nextGridObj = nullptr;
 	newObject->prevGridObj = nullptr;
 
@@ -830,12 +841,15 @@ void MoveFigter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y) {
 	stObjectInfo* player = gClientMap[hostID];
 	player->byDir = Direction;
 	player->bMoveFlag = true;
-	player->bFirstMoveFlag = true;
+	//player->bFirstMoveFlag = true;
 
 	// 좌표가 틀어지면 클라이언트를 끊는 것이 아니라 Sync를 맞춘다.
 	if (abs(X - player->stPos.usX) > dfERROR_RANGE || abs(Y - player->stPos.usY) > dfERROR_RANGE) {
 		// 좌표 오차가 dfERROR_RANGE보다 크면 SYNC 메시지 전송
-		//std::cout << "[SYNC_START] C(" << X << ", " << Y << ") S(" << player->stPos.usX << ", " << player->stPos.usY << ")" << std::endl;
+#ifdef SYNC_TEST
+		std::cout << "[SYNC_START] C(" << X << ", " << Y << ") S(" << player->stPos.usX << ", " << player->stPos.usY << ")" << std::endl;
+		std::cout << "Sbefore(" << player->beforePos.usX << ", " << player->beforePos.usY << ")" << std::endl;
+#endif // SYNC_TEST		
 		SyncPosition(player);
 	}
 	else {
@@ -863,6 +877,9 @@ void MoveFigter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y) {
 		}
 	}
 	
+#ifdef SYNC_TEST
+	player->beforePos = player->stPos;
+#endif // SYNC_TEST
 
 #ifdef DUMB_SPACE_DIV
 	// 주변 클라이언트에 START 메시지 포워딩
@@ -884,8 +901,11 @@ void StopFigther(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y) {
 
 	// 좌표가 틀어지면 클라이언트를 끊는 것이 아니라 Sync를 맞춘다.
 	if (abs(X - player->stPos.usX) > dfERROR_RANGE || abs(Y - player->stPos.usY) > dfERROR_RANGE) {
+#ifdef SYNC_TEST
 		// 좌표 오차가 dfERROR_RANGE보다 크면 SYNC 메시지 전송
-		//std::cout << "[SYNC_STOP] C(" << X << ", " << Y << ") S(" << player->stPos.usX << ", " << player->stPos.usY << ")" << std::endl;
+		std::cout << "[SYNC_STOP] C(" << X << ", " << Y << ") S(" << player->stPos.usX << ", " << player->stPos.usY << ")" << std::endl;
+		std::cout << "Sbefore(" << player->beforePos.usX << ", " << player->beforePos.usY << ")" << std::endl;
+#endif // SYNC_TEST		
 		SyncPosition(player);
 	}
 	else {
@@ -912,6 +932,10 @@ void StopFigther(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y) {
 #endif 
 		}
 	}
+
+#ifdef SYNC_TEST
+	player->beforePos = player->stPos;
+#endif // SYNC_TEST
 
 #ifdef DUMB_SPACE_DIV
 	// 주변 클라이언트에 STOP 메시지 포워딩
@@ -963,6 +987,10 @@ void AttackFighter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y, enAtta
 #endif 
 		}
 	}
+
+#ifdef SYNC_TEST
+	player->beforePos = player->stPos;
+#endif // SYNC_TEST
 
 	// 작업 큐 큐잉
 	stAttackWork atkWork;
@@ -1021,23 +1049,23 @@ void ReceiveEcho(HostID hostID, uint32_t time)
 	g_Proxy.ECHO(hostID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_ECHO, time);
 
 	// 타이머 갱신
-	if (gClientMap.find(hostID) != gClientMap.end()) {
-		stObjectInfo* client = gClientMap[hostID];
-		time_t beforeTime = client->lastEchoTime;
-		if (beforeTime != gTime) {
-			auto rangeIter = gTimeMap.equal_range(beforeTime);
-			for (auto iter = rangeIter.first; iter != rangeIter.second; iter++) {
-				if (iter->second == hostID) {
-					gTimeMap.erase(iter);
-					break;
-				}
-			}
-
-			client->lastEchoTime = gTime;
-			gTimeMap.insert({gTime, hostID});
-		}
-
-	}
+	//if (gClientMap.find(hostID) != gClientMap.end()) {
+	//	stObjectInfo* client = gClientMap[hostID];
+	//	time_t beforeTime = client->lastEchoTime;
+	//	if (beforeTime != gTime) {
+	//		auto rangeIter = gTimeMap.equal_range(beforeTime);
+	//		for (auto iter = rangeIter.first; iter != rangeIter.second; iter++) {
+	//			if (iter->second == hostID) {
+	//				gTimeMap.erase(iter);
+	//				break;
+	//			}
+	//		}
+	//
+	//		client->lastEchoTime = gTime;
+	//		gTimeMap.insert({gTime, hostID});
+	//	}
+	//
+	//}
 }
 
 //////////////////////////////
@@ -1053,7 +1081,8 @@ void BatchDeleteClientWork() {
 
 			// 코어에 연결 종료 요청
 			if (!netcoreSide) {
-				g_Proxy.Disconnect(hostID);
+				std::cout << "[Delete by Contents] HostID: " << hostID << std::endl;
+				g_Proxy.ForcedDisconnect(hostID);
 			}
 
 #ifdef DUMB_SPACE_DIV
@@ -1200,10 +1229,10 @@ void BatchMoveWork(uint16 calibration) {
 	for (auto iter : gClientMap) {
 		stObjectInfo* object = iter.second;
 		if (object->bMoveFlag) {
-			if (object->bFirstMoveFlag) {
-				object->bFirstMoveFlag = false;
-				continue;
-			}
+			//if (object->bFirstMoveFlag) {
+			//	object->bFirstMoveFlag = false;
+			//	continue;
+			//}
 
 #ifdef DUMB_SPACE_DIV	
 			DeleteFromGrid(object->stPos.usY, object->stPos.usX, object->uiID);
@@ -1217,6 +1246,7 @@ void BatchMoveWork(uint16 calibration) {
 			case dfPACKET_MOVE_DIR_LL:
 				if (object->stPos.usX < DELTA_X * (calibration + 1)) {			// 오버 프래임 로직 추가
 					object->stPos.usX = dfRANGE_MOVE_LEFT;
+					object->bMoveFlag = false;
 				}
 				else {
 					object->stPos.usX -= DELTA_X * (calibration + 1);
@@ -1226,12 +1256,14 @@ void BatchMoveWork(uint16 calibration) {
 			case dfPACKET_MOVE_DIR_LU:
 				if (object->stPos.usX < DELTA_X * (calibration + 1)) {
 					object->stPos.usX = dfRANGE_MOVE_LEFT;
+					object->bMoveFlag = false;
 				}
 				else {
 					object->stPos.usX -= DELTA_X * (calibration + 1);
 				}
 				if (object->stPos.usY < DELTA_Y * (calibration + 1)) {
 					object->stPos.usY = dfRANGE_MOVE_TOP;
+					object->bMoveFlag = false;
 				}
 				else {
 					object->stPos.usY -= DELTA_Y * (calibration + 1);
@@ -1241,6 +1273,7 @@ void BatchMoveWork(uint16 calibration) {
 			case dfPACKET_MOVE_DIR_UU:
 				if (object->stPos.usY < DELTA_Y * (calibration + 1)) {
 					object->stPos.usY = dfRANGE_MOVE_TOP;
+					object->bMoveFlag = false;
 				}
 				else {
 					object->stPos.usY -= DELTA_Y * (calibration + 1);
@@ -1250,12 +1283,14 @@ void BatchMoveWork(uint16 calibration) {
 			case dfPACKET_MOVE_DIR_RU:
 				if (object->stPos.usX + DELTA_X * (calibration + 1) > dfRANGE_MOVE_RIGHT) {
 					object->stPos.usX = dfRANGE_MOVE_RIGHT;
+					object->bMoveFlag = false;
 				}
 				else {
 					object->stPos.usX += DELTA_X * (calibration + 1);
 				}
 				if (object->stPos.usY < DELTA_Y * (calibration + 1)) {
 					object->stPos.usY = dfRANGE_MOVE_TOP;
+					object->bMoveFlag = false;
 				}
 				else {
 					object->stPos.usY -= DELTA_Y * (calibration + 1);
@@ -1265,6 +1300,7 @@ void BatchMoveWork(uint16 calibration) {
 			case dfPACKET_MOVE_DIR_RR:
 				if (object->stPos.usX + DELTA_X * (calibration + 1) > dfRANGE_MOVE_RIGHT) {
 					object->stPos.usX = dfRANGE_MOVE_RIGHT;
+					object->bMoveFlag = false;
 				}
 				else {
 					object->stPos.usX += DELTA_X * (calibration + 1);
@@ -1274,12 +1310,14 @@ void BatchMoveWork(uint16 calibration) {
 			case dfPACKET_MOVE_DIR_RD:
 				if (object->stPos.usX + DELTA_X * (calibration + 1) > dfRANGE_MOVE_RIGHT) {
 					object->stPos.usX = dfRANGE_MOVE_RIGHT;
+					object->bMoveFlag = false;
 				}
 				else {
 					object->stPos.usX += DELTA_X * (calibration + 1);
 				}
 				if (object->stPos.usY + DELTA_Y * (calibration + 1) > dfRANGE_MOVE_BOTTOM) {
 					object->stPos.usY = dfRANGE_MOVE_BOTTOM;
+					object->bMoveFlag = false;
 				}
 				else {
 					object->stPos.usY += DELTA_Y * (calibration + 1);
@@ -1289,6 +1327,7 @@ void BatchMoveWork(uint16 calibration) {
 			case dfPACKET_MOVE_DIR_DD:
 				if (object->stPos.usY + DELTA_Y * (calibration + 1) > dfRANGE_MOVE_BOTTOM) {
 					object->stPos.usY = dfRANGE_MOVE_BOTTOM;
+					object->bMoveFlag = false;
 				}
 				else {
 					object->stPos.usY += DELTA_Y * (calibration + 1);
@@ -1298,12 +1337,14 @@ void BatchMoveWork(uint16 calibration) {
 			case dfPACKET_MOVE_DIR_LD:
 				if (object->stPos.usX < DELTA_X * (calibration + 1)) {
 					object->stPos.usX = dfRANGE_MOVE_LEFT;
+					object->bMoveFlag = false;
 				}
 				else {
 					object->stPos.usX -= DELTA_X * (calibration + 1);
 				}
 				if (object->stPos.usY + DELTA_Y * (calibration + 1) > dfRANGE_MOVE_BOTTOM) {
 					object->stPos.usY = dfRANGE_MOVE_BOTTOM;
+					object->bMoveFlag = false;
 				}
 				else {
 					object->stPos.usY += DELTA_Y * (calibration + 1);
