@@ -75,6 +75,7 @@ int main() {
 
 	timeBeginPeriod(1);
 	double loopStart = clock();
+	uint16 loopCnt = 0;
 	uint16 calibrationFrameCnt = 0;
 	double overTime = 0;
 	char ctrInput;
@@ -86,6 +87,7 @@ int main() {
 			}
 		}
 		jnetServer->FrameMove(calibrationFrameCnt);
+		++loopCnt;
 
 		double loopEnd = clock();
 		double loopDuration = (loopEnd - loopStart);
@@ -94,8 +96,9 @@ int main() {
 			overTime += (loopDuration - SLEEP_TIME_MS);
 			calibrationFrameCnt = overTime / SLEEP_TIME_MS;
 
-			std::cout << "프레임 초과" << endl;
+			std::cout << "[프레임 초과]" << endl;
 			std::cout << "calibrationFrameCnt: " << calibrationFrameCnt << std::endl;
+			std::cout << "loopCnt: " << loopCnt << std::endl;
 
 			overTime -= (calibrationFrameCnt * SLEEP_TIME_MS);
 		}
