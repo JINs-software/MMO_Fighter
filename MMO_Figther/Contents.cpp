@@ -1143,7 +1143,10 @@ void BatchAttackWork() {
 #endif
 	}
 }
-void BatchMoveWork(uint16 calibration) {
+void BatchMoveWork(uint16 loopDelta) {
+	//if (loopDelta <= 0) {
+	//	return;
+	//}
 	for (auto iter : gClientMap) {
 		stObjectInfo* object = iter.second;
 		if (object->bMoveFlag) {
@@ -1162,110 +1165,110 @@ void BatchMoveWork(uint16 calibration) {
 
 			switch (object->byDir) {
 			case dfPACKET_MOVE_DIR_LL:
-				if (object->stPos.usX < DELTA_X * (calibration + 1)) {			// 오버 프래임 로직 추가
+				if (object->stPos.usX < DELTA_X * (loopDelta)) {			// 오버 프래임 로직 추가
 					object->stPos.usX = dfRANGE_MOVE_LEFT;
 					object->bMoveFlag = false;
 				}
 				else {
-					object->stPos.usX -= DELTA_X * (calibration + 1);
+					object->stPos.usX -= DELTA_X * (loopDelta);
 				}
 				break;
 
 			case dfPACKET_MOVE_DIR_LU:
-				if (object->stPos.usX < DELTA_X * (calibration + 1)) {
+				if (object->stPos.usX < DELTA_X * (loopDelta)) {
 					object->stPos.usX = dfRANGE_MOVE_LEFT;
 					object->bMoveFlag = false;
 				}
 				else {
-					object->stPos.usX -= DELTA_X * (calibration + 1);
+					object->stPos.usX -= DELTA_X * (loopDelta);
 				}
-				if (object->stPos.usY < DELTA_Y * (calibration + 1)) {
+				if (object->stPos.usY < DELTA_Y * (loopDelta)) {
 					object->stPos.usY = dfRANGE_MOVE_TOP;
 					object->bMoveFlag = false;
 				}
 				else {
-					object->stPos.usY -= DELTA_Y * (calibration + 1);
+					object->stPos.usY -= DELTA_Y * (loopDelta);
 				}
 				break;
 
 			case dfPACKET_MOVE_DIR_UU:
-				if (object->stPos.usY < DELTA_Y * (calibration + 1)) {
+				if (object->stPos.usY < DELTA_Y * (loopDelta)) {
 					object->stPos.usY = dfRANGE_MOVE_TOP;
 					object->bMoveFlag = false;
 				}
 				else {
-					object->stPos.usY -= DELTA_Y * (calibration + 1);
+					object->stPos.usY -= DELTA_Y * (loopDelta);
 				}
 				break;
 
 			case dfPACKET_MOVE_DIR_RU:
-				if (object->stPos.usX + DELTA_X * (calibration + 1) > dfRANGE_MOVE_RIGHT) {
+				if (object->stPos.usX + DELTA_X * (loopDelta) > dfRANGE_MOVE_RIGHT) {
 					object->stPos.usX = dfRANGE_MOVE_RIGHT;
 					object->bMoveFlag = false;
 				}
 				else {
-					object->stPos.usX += DELTA_X * (calibration + 1);
+					object->stPos.usX += DELTA_X * (loopDelta);
 				}
-				if (object->stPos.usY < DELTA_Y * (calibration + 1)) {
+				if (object->stPos.usY < DELTA_Y * (loopDelta)) {
 					object->stPos.usY = dfRANGE_MOVE_TOP;
 					object->bMoveFlag = false;
 				}
 				else {
-					object->stPos.usY -= DELTA_Y * (calibration + 1);
+					object->stPos.usY -= DELTA_Y * (loopDelta);
 				}
 				break;
 
 			case dfPACKET_MOVE_DIR_RR:
-				if (object->stPos.usX + DELTA_X * (calibration + 1) > dfRANGE_MOVE_RIGHT) {
+				if (object->stPos.usX + DELTA_X * (loopDelta) > dfRANGE_MOVE_RIGHT) {
 					object->stPos.usX = dfRANGE_MOVE_RIGHT;
 					object->bMoveFlag = false;
 				}
 				else {
-					object->stPos.usX += DELTA_X * (calibration + 1);
+					object->stPos.usX += DELTA_X * (loopDelta);
 				}
 				break;
 
 			case dfPACKET_MOVE_DIR_RD:
-				if (object->stPos.usX + DELTA_X * (calibration + 1) > dfRANGE_MOVE_RIGHT) {
+				if (object->stPos.usX + DELTA_X * (loopDelta) > dfRANGE_MOVE_RIGHT) {
 					object->stPos.usX = dfRANGE_MOVE_RIGHT;
 					object->bMoveFlag = false;
 				}
 				else {
-					object->stPos.usX += DELTA_X * (calibration + 1);
+					object->stPos.usX += DELTA_X * (loopDelta);
 				}
-				if (object->stPos.usY + DELTA_Y * (calibration + 1) > dfRANGE_MOVE_BOTTOM) {
+				if (object->stPos.usY + DELTA_Y * (loopDelta) > dfRANGE_MOVE_BOTTOM) {
 					object->stPos.usY = dfRANGE_MOVE_BOTTOM;
 					object->bMoveFlag = false;
 				}
 				else {
-					object->stPos.usY += DELTA_Y * (calibration + 1);
+					object->stPos.usY += DELTA_Y * (loopDelta);
 				}
 				break;
 
 			case dfPACKET_MOVE_DIR_DD:
-				if (object->stPos.usY + DELTA_Y * (calibration + 1) > dfRANGE_MOVE_BOTTOM) {
+				if (object->stPos.usY + DELTA_Y * (loopDelta) > dfRANGE_MOVE_BOTTOM) {
 					object->stPos.usY = dfRANGE_MOVE_BOTTOM;
 					object->bMoveFlag = false;
 				}
 				else {
-					object->stPos.usY += DELTA_Y * (calibration + 1);
+					object->stPos.usY += DELTA_Y * (loopDelta);
 				}
 				break;
 
 			case dfPACKET_MOVE_DIR_LD:
-				if (object->stPos.usX < DELTA_X * (calibration + 1)) {
+				if (object->stPos.usX < DELTA_X * (loopDelta)) {
 					object->stPos.usX = dfRANGE_MOVE_LEFT;
 					object->bMoveFlag = false;
 				}
 				else {
-					object->stPos.usX -= DELTA_X * (calibration + 1);
+					object->stPos.usX -= DELTA_X * (loopDelta);
 				}
-				if (object->stPos.usY + DELTA_Y * (calibration + 1) > dfRANGE_MOVE_BOTTOM) {
+				if (object->stPos.usY + DELTA_Y * (loopDelta) > dfRANGE_MOVE_BOTTOM) {
 					object->stPos.usY = dfRANGE_MOVE_BOTTOM;
 					object->bMoveFlag = false;
 				}
 				else {
-					object->stPos.usY += DELTA_Y * (calibration + 1);
+					object->stPos.usY += DELTA_Y * (loopDelta);
 				}
 				break;
 			default:

@@ -1,5 +1,8 @@
 #pragma once
 
+//#define SLEEP_LOOP
+#define NON_SLEEP_LOOP
+
 //#define DUMB_SPACE_DIV
 #define FIXED_GRID_SPACE_DIV
 
