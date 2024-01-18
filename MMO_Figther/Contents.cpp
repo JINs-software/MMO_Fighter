@@ -999,7 +999,7 @@ void BatchDeleteClientWork() {
 
 			// 코어에 연결 종료 요청
 			if (!netcoreSide) {
-				std::cout << "[Delete by Contents] HostID: " << hostID << std::endl;
+				//std::cout << "[Delete by Contents] HostID: " << hostID << std::endl;
 				g_Proxy.ForcedDisconnect(hostID);
 			}
 
