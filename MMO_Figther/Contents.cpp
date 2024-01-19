@@ -1144,9 +1144,9 @@ void BatchAttackWork() {
 	}
 }
 void BatchMoveWork(uint16 loopDelta) {
-	//if (loopDelta <= 0) {
-	//	return;
-	//}
+	if (loopDelta <= 0) {
+		return;
+	}
 	for (auto iter : gClientMap) {
 		stObjectInfo* object = iter.second;
 		if (object->bMoveFlag) {
