@@ -104,7 +104,7 @@
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\..\0. Utility\2. RingBuffer\include;$(SolutionDir)..\..\0. Utility\3. ArpSpoofer\ArpSpoofer;$(SolutionDir)..\..\0. Utility\3. ArpSpoofer\Npcap\npcap_sdk\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)MMO_Figther;$(SolutionDir);$(SolutionDir)..\..\0. Utility\2. RingBuffer\include;$(SolutionDir)..\..\0. Utility\3. ArpSpoofer\ArpSpoofer;$(SolutionDir)..\..\0. Utility\3. ArpSpoofer\Npcap\npcap_sdk\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

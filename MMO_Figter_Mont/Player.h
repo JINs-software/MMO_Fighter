@@ -13,202 +13,30 @@ struct Point {
 
 struct Player
 {
-	unsigned int hostID;	// host id
-	Point servPoint;
-	Point clntPoint;
+	unsigned int hostID = 0;	// host id
+	Point servPoint = { 0, 0 };
+	Point clntPoint = { 0, 0 };
+	unsigned short port = 0;
+	bool bMoveFlag = false;
+	BYTE byDir;
 
 	Player() {}
-	Player(unsigned int hostID, Point sp, Point cp)
-		: hostID(hostID), servPoint(sp), clntPoint(cp) {}
+	Player(unsigned int hostID, Point sp, Point cp, unsigned short pt)
+		: hostID(hostID), servPoint(sp), clntPoint(cp), port(pt) {}
 };
 
 struct PlayerManager {
 	ArpSpoofer* capture;
 	bool procFlag = false;
 	std::unordered_map<unsigned int, Player> players;
-	std::mutex pmapMtx;
+	std::mutex playersMtx;
+	std::unordered_map<unsigned short, unsigned int> playerPort;
 
 	void SetCapture(ArpSpoofer* capture_) {
 		capture = capture_;
 	}
-	void ProcCapture() {
-		while (procFlag) {
-			if (!capture->IsEmptyPacketQueue()) {
-				const stCapturedPacket& capPack = capture->GetCapturedPacket();
-				if (capPack.msgLen < 3) {
-					continue;
-				}
-				JBuffer jbuff(capPack.msgLen);
-				jbuff.Enqueue(capPack.msg, capPack.msgLen);
+	void ProcCapture();
 
-				BYTE msgCode;
-				BYTE msgLen;
-				BYTE msgID;
-				jbuff.Peek(0, reinterpret_cast<BYTE*>(&msgCode), sizeof(msgCode));
-				if (msgCode != dfPACKET_CODE) {
-					// 코드 불일치
-					continue;
-				}
-				jbuff.Peek(1, reinterpret_cast<BYTE*>(&msgLen), sizeof(msgLen));
-				jbuff.Peek(2, reinterpret_cast<BYTE*>(&msgID), sizeof(msgID));
-				
-				switch (msgID)
-				{
-				case dfPACKET_SC_CREATE_MY_CHARACTER:
-				{
-					BYTE byCode;
-					jbuff >> byCode;
-					BYTE bySize;
-					jbuff >> bySize;
-					BYTE byType;
-					jbuff >> byType;
-					uint32_t ID;
-					jbuff >> ID;
-					BYTE Direction;
-					jbuff >> Direction;
-					uint16_t X;
-					jbuff >> X;
-					uint16_t Y;
-					jbuff >> Y;
-					BYTE HP;
-					jbuff >> HP;
-					//CRT_CHARACTER(remote, byCode, bySize, byType, ID, Direction, X, Y, HP);
-					CreatePlayer(ID, { X, Y });
-				}
-				break;
-				case dfPACKET_SC_CREATE_OTHER_CHARACTER:
-				{
-					BYTE byCode;
-					jbuff >> byCode;
-					BYTE bySize;
-					jbuff >> bySize;
-					BYTE byType;
-					jbuff >> byType;
-					uint32_t ID;
-					jbuff >> ID;
-					BYTE Direction;
-					jbuff >> Direction;
-					uint16_t X;
-					jbuff >> X;
-					uint16_t Y;
-					jbuff >> Y;
-					BYTE HP;
-					jbuff >> HP;
-					//CRT_OTHER_CHARACTER(remote, byCode, bySize, byType, ID, Direction, X, Y, HP);
-				}
-				break;
-				case dfPACKET_SC_DELETE_CHARACTER:
-				{
-					BYTE byCode;
-					jbuff >> byCode;
-					BYTE bySize;
-					jbuff >> bySize;
-					BYTE byType;
-					jbuff >> byType;
-					uint32_t ID;
-					jbuff >> ID;
-					//DEL_CHARACTER(remote, byCode, bySize, byType, ID);
-					DeletePlayer(ID);
-				}
-				break;
-				case dfPACKET_CS_MOVE_START:
-				{
-					BYTE byCode;
-					jbuff >> byCode;
-					BYTE bySize;
-					jbuff >> bySize;
-					BYTE byType;
-					jbuff >> byType;
-					BYTE Direction;
-					jbuff >> Direction;
-					uint16_t X;
-					jbuff >> X;
-					uint16_t Y;
-					jbuff >> Y;
-					//MovePlayerClnt(ID,)
-				}
-				break;
-				case dfPACKET_SC_MOVE_START:
-				{
-					BYTE byCode;
-					jbuff >> byCode;
-					BYTE bySize;
-					jbuff >> bySize;
-					BYTE byType;
-					jbuff >> byType;
-					uint32_t ID;
-					jbuff >> ID;
-					BYTE Direction;
-					jbuff >> Direction;
-					uint16_t X;
-					jbuff >> X;
-					uint16_t Y;
-					jbuff >> Y;
-					//MOVE_START(remote, byCode, bySize, byType, ID, Direction, X, Y);
-					MovePlayerServ(ID, { X, Y });
-				}
-				break;
-				case dfPACKET_CS_MOVE_STOP:
-				{
-					BYTE byCode;
-					jbuff >> byCode;
-					BYTE bySize;
-					jbuff >> bySize;
-					BYTE byType;
-					jbuff >> byType;
-					BYTE Direction;
-					jbuff >> Direction;
-					uint16_t X;
-					jbuff >> X;
-					uint16_t Y;
-					jbuff >> Y;
-					// ?
-				}
-				break;
-				case dfPACKET_SC_MOVE_STOP:
-				{
-					BYTE byCode;
-					jbuff >> byCode;
-					BYTE bySize;
-					jbuff >> bySize;
-					BYTE byType;
-					jbuff >> byType;
-					uint32_t ID;
-					jbuff >> ID;
-					BYTE Direction;
-					jbuff >> Direction;
-					uint16_t X;
-					jbuff >> X;
-					uint16_t Y;
-					jbuff >> Y;
-					//MOVE_STOP(remote, byCode, bySize, byType, ID, Direction, X, Y);
-					StopPlayer(ID, { X, Y });
-				}
-				break;
-				case dfPACKET_SC_SYNC:
-				{
-					BYTE byCode;
-					jbuff >> byCode;
-					BYTE bySize;
-					jbuff >> bySize;
-					BYTE byType;
-					jbuff >> byType;
-					uint32_t ID;
-					jbuff >> ID;
-					uint16_t X;
-					jbuff >> X;
-					uint16_t Y;
-					jbuff >> Y;
-					//SYNC(remote, byCode, bySize, byType, ID, X, Y);
-					SyncPlayer(ID, { X, Y });
-				}
-				break;
-				default:
-					break;
-				}
-			}
-		}
-	}
 	void RunProcCapture() {
 		procFlag = true;
 		std::thread thCapture(&PlayerManager::ProcCapture, this);
@@ -218,46 +46,93 @@ struct PlayerManager {
 		procFlag = false;
 	}
 
-	void CreatePlayer(unsigned int hostID, Point sp) {
+	void FrameMove(BYTE loopDelta);
+
+	// S->C
+	void CreatePlayer(unsigned int hostID, Point sp, unsigned short port) {
+		playersMtx.lock();
 		if (players.find(hostID) == players.end()) {
-			players.insert(std::make_pair(hostID, Player(hostID, sp, sp)));
-			std::cout << "CreatePlayer, id: " << hostID << std::endl;
+			if (playerPort.find(port) != playerPort.end()) {
+				playerPort.erase(port);
+			}
+
+			players.insert(std::make_pair(hostID, Player(hostID, sp, sp, port)));
+			playerPort.insert(std::make_pair(port, hostID));
+			//std::cout << "CreatePlayer, id: " << hostID << ", port: " << port << std::endl;
 		}
 		else {
 			players[hostID].servPoint = sp;
 		}
+		playersMtx.unlock();
 	}
 	void DeletePlayer(unsigned int hostID) {
+		playersMtx.lock();
 		if (players.find(hostID) != players.end()) {
+			unsigned short port = players[hostID].port;
+			playerPort.erase(port);
 			players.erase(hostID);
-			std::cout << "DeletePlayer, id: " << hostID << std::endl;
+			//std::cout << "DeletePlayer, id: " << hostID << ", port: " << port << std::endl;
 		}
+		playersMtx.unlock();
 	}
 
 	void MovePlayerServ(unsigned int hostID, Point sp) {
+		playersMtx.lock();
 		if (players.find(hostID) != players.end()) {
-			players[hostID].servPoint = sp;
-			std::cout << "MovePlayerServ, id: " << hostID << std::endl;
+			Player& player = players[hostID];
+			player.servPoint = sp;
+			//std::cout << "MovePlayerServ, id: " << hostID << ", x: " << player.servPoint.X << ", y: " << player.servPoint.Y << std::endl;
 		}
+		playersMtx.unlock();
 	}
-	void StopPlayer(unsigned int hostID, Point sp) {
+	void StopPlayerServ(unsigned int hostID, Point sp) {
+		playersMtx.lock();
 		if (players.find(hostID) != players.end()) {
-			players[hostID].servPoint = sp;
-			std::cout << "StopPlayer, id: " << hostID << std::endl;
+			Player& player = players[hostID];
+			player.servPoint = sp;
+			//std::cout << "MovePlayerServ, id: " << hostID << ", x: " << player.servPoint.X << ", y: " << player.servPoint.Y << std::endl;
 		}
+		playersMtx.unlock();
 	}
-	void MovePlayerClnt(unsigned int hostID, Point cp) {
-		if (players.find(hostID) != players.end()) {
-			players[hostID].clntPoint = cp;
+	void MovePlayerClnt(unsigned short port, Point cp, BYTE dir) {
+		playersMtx.lock();
+		if (playerPort.find(port) != playerPort.end()) {
+			unsigned int hostID = playerPort[port];
+			if (players.find(hostID) != players.end()) {
+				Player& player = players[hostID];
+				player.bMoveFlag = true;
+				player.clntPoint = cp;
+				player.servPoint = cp;
+				player.byDir = dir;
+				//std::cout << "MovePlayerClnt, id: " << hostID << ", x: " << player.clntPoint.X << ", y: " << player.clntPoint.Y << std::endl;
+			}
 		}
+		playersMtx.unlock();
+	}
+	void StopPlayerClnt(unsigned short port, Point cp) {
+		playersMtx.lock();
+		if (playerPort.find(port) != playerPort.end()) {
+			unsigned int hostID = playerPort[port];
+			if (players.find(hostID) != players.end()) {
+				Player& player = players[hostID];
+				player.bMoveFlag = false;
+				player.clntPoint = cp;
+				player.servPoint = cp;
+				//std::cout << "StopPlayerClnt, id: " << hostID << ", x: " << player.clntPoint.X << ", y: " << player.clntPoint.Y << std::endl;
+			}
+		}
+		playersMtx.unlock();
 	}
 
 	void SyncPlayer(unsigned int hostID, Point p) {
+		playersMtx.lock();
 		if (players.find(hostID) != players.end()) {
-			players[hostID].servPoint = p;
-			players[hostID].clntPoint = p;
-			std::cout << "SyncPlayer, id: " << hostID << std::endl;
+			Player& player = players[hostID];
+			player.servPoint = p;
+			player.clntPoint = p;
+			//std::cout << "SyncPlayer, id: " << hostID << ", x: " << p.X << ", y: " << p.Y << std::endl;
 		}
+		playersMtx.unlock();
 	}
 	
 };

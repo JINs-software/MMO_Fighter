@@ -14,6 +14,15 @@
 //////////////////////////
 // My Global Variable
 //////////////////////////
+// Draw
+HDC g_hMemDC;
+HBITMAP g_hMemDC_Bitmap;
+HBITMAP g_hMemDC_BitmapOld;
+RECT g_MemDC_Rect;
+
+//HPEN pen;
+//HBRUSH hBrushServ;
+//HBRUSH hBrushClnt;
 
 // Grid
 Grid gGrid;
@@ -22,8 +31,12 @@ Grid gGrid;
 ArpSpoofer servCapture;
 
 // MMO_SERVER
-std::string serverIP = "172.29.11.220";
+std::string serverIP = "172.30.1.100";
 unsigned short listenPort = 20000;
 
 // Player
 PlayerManager pMgr;
+
+// Timer
+const unsigned int timer40ms = 1;
+const unsigned int timer120ms = 2;
