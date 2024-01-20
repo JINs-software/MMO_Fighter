@@ -105,6 +105,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
       return FALSE;
    }
 
+   // Open Console
+   AllocConsole();
+   freopen("CONOUT$", "wt", stdout);
+
    /////////////////////
    // My Init
    /////////////////////
@@ -113,7 +117,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    gGrid.SetGridCell(64, 100, 100);
 
    // Capture
-   servCapture.Init(serverIP);
+   servCapture.Init(serverIP, true);
    servCapture.RunServerCapture(serverIP, listenPort);
    pMgr.SetCapture(&servCapture);
    pMgr.RunProcCapture();

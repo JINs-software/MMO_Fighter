@@ -10,6 +10,7 @@
 #include <WinSock2.h>
 #pragma comment(lib, "ws2_32")
 
+
 //////////////////////////
 // My Global Variable
 //////////////////////////
@@ -21,7 +22,7 @@ Grid gGrid;
 ArpSpoofer servCapture;
 
 // MMO_SERVER
-std::string serverIP = "172.30.1.100";
+std::string serverIP = "172.29.11.220";
 unsigned short listenPort = 20000;
 
 // Player

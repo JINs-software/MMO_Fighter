@@ -2,8 +2,8 @@
 #include <vector>
 #include <string>
 #include <cassert>
-#include <Windows.h>
 #include "Player.h"
+#include <Windows.h>
 
 struct Cell {
 	int x;
