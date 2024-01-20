@@ -125,6 +125,7 @@ int main() {
 
 		loopEnd = clock();
 		loopDuration = (loopEnd - loopStart);
+		loopStart = clock();
 
 		if (loopDuration > SLEEP_TIME_MS) {
 			std::cout << "[프레임 초과]" << endl;
@@ -136,7 +137,7 @@ int main() {
 		loopDelta = overTime / SLEEP_TIME_MS;
 		overTime -= loopDelta * SLEEP_TIME_MS;
 
-		loopStart = clock();
+		//loopStart = clock();
 #endif // NON_SLEEP_LOOP
 
 	}
