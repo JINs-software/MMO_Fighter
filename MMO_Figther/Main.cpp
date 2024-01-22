@@ -69,7 +69,7 @@ int main() {
 	jnetServer->AttachBatchProcess(&fightGameBatch);
 
 	stServerStartParam startParam;
-	startParam.IP = "172.30.1.100";
+	startParam.IP = "172.29.16.221";
 	startParam.Port = 20000;
 
 	jnetServer->Start(startParam);

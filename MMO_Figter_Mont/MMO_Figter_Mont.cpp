@@ -216,6 +216,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             EndPaint(hWnd, &ps);
         }
         break;
+    case WM_LBUTTONDOWN:
+    {
+        int x = LOWORD(lParam);
+        int y = HIWORD(lParam);
+        gGrid.SelectPlayer(x, y, pMgr.players);
+    }
+    break;
     case WM_MOUSEWHEEL:
     {
         POINT cursorPos;

@@ -6,6 +6,8 @@
 #include <string>
 #include <Windows.h>
 
+#define CILCLE_LEN 15
+
 struct Cell {
 	int x;
 	int y;
@@ -35,12 +37,46 @@ public:
 		}
 	}
 
-	void Draw(HDC hdc, int windowWidth, int windowHeight, const std::unordered_map<unsigned int, Player>* players = nullptr, std::mutex* playersMtx = nullptr) {
+	void SelectPlayer(int winX, int winY, std::unordered_map<unsigned int, Player>& players) {
+		//winX -= offsetX;
+		//winX /= ((double)cellSize / 64);
+		//winY -= offsetY;
+		//winY /= ((double)cellSize / 64);
+
+		for (auto iter = players.begin(); iter != players.end(); iter++) {
+			Player& player = iter->second;
+			int cX = player.clntPoint.X;
+			int cY = player.clntPoint.Y;
+			cX *= ((double)cellSize / 64);
+			cX += offsetX;
+			cY *= ((double)cellSize / 64);
+			cY += offsetY;
+			// Ellipse(hdc, cX - CILCLE_LEN, cY - CILCLE_LEN, cX + CILCLE_LEN, cY + CILCLE_LEN);
+			if (cX - CILCLE_LEN <= winX && winX <= cX + CILCLE_LEN && cY - CILCLE_LEN <= winY && winY <= cY + CILCLE_LEN) {
+				player.focusOn = !player.focusOn;
+				break;
+			}
+		}
+	}
+
+	void Draw(HDC hdc, int windowWidth, int windowHeight, std::unordered_map<unsigned int, Player>* players = nullptr, std::mutex* playersMtx = nullptr) {
 		bool textFlag = false;
 
 		HPEN pen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
-		HBRUSH hBrushServ = CreateSolidBrush(RGB(255, 0, 0));
-		HBRUSH hBrushClnt = CreateSolidBrush(RGB(0, 255, 0));
+		HBRUSH hBrushRed = CreateSolidBrush(RGB(255, 0, 0));
+		HBRUSH hBrushOrange = CreateSolidBrush(RGB(0xFF, 0x7F, 0));
+		HBRUSH hBrushPurple = CreateSolidBrush(RGB(0x8B, 0x0, 0xFF));
+		HBRUSH hBrushBlue = CreateSolidBrush(RGB(0, 0, 255));
+		HBRUSH hBrushGray = CreateSolidBrush(RGB(128, 128, 128));
+		HBRUSH hBrushBlack = CreateSolidBrush(RGB(0x0A, 0x0A, 0x0A));
+
+		HBRUSH hBrushGreen0 = CreateSolidBrush(RGB(0, 255, 0));
+		HBRUSH hBrushGreen1 = CreateSolidBrush(RGB(50, 255, 50));
+		HBRUSH hBrushGreen2 = CreateSolidBrush(RGB(100, 255, 100));
+		HBRUSH hBrushGreen3 = CreateSolidBrush(RGB(150, 255, 150));
+		HBRUSH hBrushGreen4 = CreateSolidBrush(RGB(200, 255, 200));
+		HBRUSH hBrushGreen5 = CreateSolidBrush(RGB(250, 255, 250));
+
 
 		HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, GetStockObject(NULL_BRUSH));
 		SelectObject(hdc, pen);
@@ -62,12 +98,12 @@ public:
 			}
 		}
 		
-		oldBrush = (HBRUSH)SelectObject(hdc, hBrushServ);
+		oldBrush = (HBRUSH)SelectObject(hdc, hBrushGreen0);
 		if (players != nullptr) {
 			playersMtx->lock();
 			for (auto iter = players->begin(); iter != players->end(); iter++) {
-				const Player& player = iter->second;
-				const Point& sp = player.servPoint;
+				Player& player = iter->second;
+				Point& sp = player.servPoint;
 				int sX = sp.X;
 				int sY = sp.Y;
 				sX *= ((double)cellSize / 64);
@@ -91,8 +127,46 @@ public:
 
 				//hBrush = CreateSolidBrush(RGB(0, 255, 0));
 				//oldBrush = (HBRUSH)SelectObject(hdc, hBrush);
-				SelectObject(hdc, hBrushClnt);
-				Ellipse(hdc, cX - 15, cY - 15, cX + 15, cY + 15);
+
+				if (player.rstSCFlag && player.rstCSFlag) {
+					SelectObject(hdc, hBrushBlack);
+				}
+				else if (player.rstSCFlag) {
+					SelectObject(hdc, hBrushRed);
+				}
+				else if (player.rstCSFlag) {
+					SelectObject(hdc, hBrushGray);
+				}
+				else if (player.finFlag) {
+					SelectObject(hdc, hBrushOrange);
+				}
+				else if (player.focusOn) {
+					SelectObject(hdc, hBrushPurple);
+				}
+				else if (player.crtFlag) {
+					SelectObject(hdc, hBrushBlue);
+				}
+				else {
+					if (player.byHP >= 90) {
+						SelectObject(hdc, hBrushGreen0);
+					}
+					else if (player.byHP >= 70) {
+						SelectObject(hdc, hBrushGreen1);
+					}
+					else if (player.byHP >= 50) {
+						SelectObject(hdc, hBrushGreen2);
+					}
+					else if (player.byHP >= 30) {
+						SelectObject(hdc, hBrushGreen3);
+					}
+					else if (player.byHP >= 10) {
+						SelectObject(hdc, hBrushGreen4);
+					}
+					else if (player.byHP >= 0) {
+						SelectObject(hdc, hBrushGreen5);
+					}
+				}
+				Ellipse(hdc, cX - CILCLE_LEN, cY - CILCLE_LEN, cX + CILCLE_LEN, cY + CILCLE_LEN);
 				std::wstring  hostIdText = std::to_wstring(player.hostID);
 				//const wchar_t* hostIdText = std::to_wstring(player.hostID);
 				TextOut(hdc, cX - 5, cY - 5, hostIdText.c_str(), wcslen(hostIdText.c_str()));
@@ -104,8 +178,26 @@ public:
 		SelectObject(hdc, oldBrush);
 
 		DeleteObject(pen);
-		DeleteObject(hBrushServ);
-		DeleteObject(hBrushClnt);
+		//HBRUSH hBrushRed = CreateSolidBrush(RGB(255, 0, 0));
+		//HBRUSH hBrushGreen = CreateSolidBrush(RGB(0, 255, 0));
+		//HBRUSH hBrushOrange = CreateSolidBrush(RGB(0xFF, 0x7F, 0));
+		//HBRUSH hBrushPurple = CreateSolidBrush(RGB(0x8B, 0x0, 0xFF));
+		//HBRUSH hBrushBlue = CreateSolidBrush(RGB(0, 0, 255));
+		//HBRUSH hBrushGray = CreateSolidBrush(RGB(128, 128, 128));
+		//HBRUSH hBrushBlack = CreateSolidBrush(RGB(0x0A, 0x0A, 0x0A));
+		DeleteObject(hBrushRed);
+		DeleteObject(hBrushOrange);
+		DeleteObject(hBrushPurple);
+		DeleteObject(hBrushBlue);
+		DeleteObject(hBrushGray);
+		DeleteObject(hBrushBlack);
+
+		DeleteObject(hBrushGreen0);
+		DeleteObject(hBrushGreen1);
+		DeleteObject(hBrushGreen2);
+		DeleteObject(hBrushGreen3);
+		DeleteObject(hBrushGreen4);
+		DeleteObject(hBrushGreen5);
 	}
 	//void DrawPlayer(HDC hdc, PlayerManager* pm) {
 	//	pm->pmapMtx.lock();

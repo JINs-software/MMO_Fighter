@@ -6,6 +6,8 @@
 #include "JBuffer.h"
 #include "Protocol.h"
 
+#define DEFAULT_TIMTER_SET 100
+
 struct Point {
 	unsigned int X;
 	unsigned int Y;
@@ -19,10 +21,19 @@ struct Player
 	unsigned short port = 0;
 	bool bMoveFlag = false;
 	BYTE byDir;
+	BYTE byHP;
+
+	bool focusOn = false;
+	bool crtFlag = false;
+	bool finFlag = false;
+	bool rstSCFlag = false;
+	bool rstCSFlag = false;
+
+	unsigned short frameTimer = 0;
 
 	Player() {}
-	Player(unsigned int hostID, Point sp, Point cp, unsigned short pt)
-		: hostID(hostID), servPoint(sp), clntPoint(cp), port(pt) {}
+	Player(unsigned int hostID, Point sp, Point cp, unsigned short pt, BYTE hp)
+		: hostID(hostID), servPoint(sp), clntPoint(cp), port(pt), byHP(hp), crtFlag(true), frameTimer(DEFAULT_TIMTER_SET) {}
 };
 
 struct PlayerManager {
@@ -49,14 +60,14 @@ struct PlayerManager {
 	void FrameMove(BYTE loopDelta);
 
 	// S->C
-	void CreatePlayer(unsigned int hostID, Point sp, unsigned short port) {
+	void CreatePlayer(unsigned int hostID, Point sp, unsigned short port, BYTE hp) {
 		playersMtx.lock();
 		if (players.find(hostID) == players.end()) {
 			if (playerPort.find(port) != playerPort.end()) {
 				playerPort.erase(port);
 			}
 
-			players.insert(std::make_pair(hostID, Player(hostID, sp, sp, port)));
+			players.insert(std::make_pair(hostID, Player(hostID, sp, sp, port, hp)));
 			playerPort.insert(std::make_pair(port, hostID));
 			//std::cout << "CreatePlayer, id: " << hostID << ", port: " << port << std::endl;
 		}
@@ -123,7 +134,15 @@ struct PlayerManager {
 		}
 		playersMtx.unlock();
 	}
-
+	void DamagePlayer(unsigned int hostID, BYTE hp) {
+		playersMtx.lock();
+		if (players.find(hostID) != players.end()) {
+			Player& player = players[hostID];
+			player.byHP = hp;
+			//std::cout << "MovePlayerServ, id: " << hostID << ", x: " << player.servPoint.X << ", y: " << player.servPoint.Y << std::endl;
+		}
+		playersMtx.unlock();
+	}
 	void SyncPlayer(unsigned int hostID, Point p) {
 		playersMtx.lock();
 		if (players.find(hostID) != players.end()) {

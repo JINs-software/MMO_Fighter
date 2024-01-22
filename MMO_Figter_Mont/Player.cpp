@@ -5,6 +5,51 @@ void PlayerManager::ProcCapture() {
 	while (procFlag) {
 		if (!capture->IsEmptyPacketQueue()) {
 			const stCapturedPacket& capPack = capture->GetCapturedPacket();
+			if (capPack.tcpHdr.fin) {
+				if (playerPort.find(capPack.tcpHdr.source) != playerPort.end()) {
+					if (players.find(playerPort[capPack.tcpHdr.source]) != players.end()) {
+						// 클라이언트 -> 서버 FIN 패킷
+						std::cout << "[C->S] FIN" << std::endl;
+						players[playerPort[capPack.tcpHdr.source]].finFlag = true;
+						players[playerPort[capPack.tcpHdr.source]].crtFlag = false;
+						players[playerPort[capPack.tcpHdr.source]].bMoveFlag = false;
+						players[playerPort[capPack.tcpHdr.source]].frameTimer = DEFAULT_TIMTER_SET;
+					}
+					
+				}
+				else if (playerPort.find(capPack.tcpHdr.dest) != playerPort.end()) {
+					if (players.find(playerPort[capPack.tcpHdr.dest]) != players.end()) {
+						// 클라이언트 -> 서버 FIN 패킷
+						std::cout << "[S->C] FIN" << std::endl;
+						players[playerPort[capPack.tcpHdr.dest]].finFlag = true;
+						players[playerPort[capPack.tcpHdr.dest]].crtFlag = false;
+						players[playerPort[capPack.tcpHdr.dest]].bMoveFlag = false;
+						players[playerPort[capPack.tcpHdr.dest]].frameTimer = DEFAULT_TIMTER_SET;
+					}
+				}
+			}
+			if (capPack.tcpHdr.rst) {
+				if (playerPort.find(capPack.tcpHdr.source) != playerPort.end()) {
+					if (players.find(playerPort[capPack.tcpHdr.source]) != players.end()) {
+						// 클라이언트 -> 서버 RST 패킷
+						std::cout << "[C->S] RST" << std::endl;
+						players[playerPort[capPack.tcpHdr.source]].rstCSFlag = true;
+						players[playerPort[capPack.tcpHdr.source]].crtFlag = false;
+						players[playerPort[capPack.tcpHdr.source]].bMoveFlag = false;
+						players[playerPort[capPack.tcpHdr.source]].frameTimer = DEFAULT_TIMTER_SET;
+					}
+				}
+				else if (playerPort.find(capPack.tcpHdr.dest) != playerPort.end()) {
+					if (players.find(playerPort[capPack.tcpHdr.dest]) != players.end()) {
+						// 클라이언트 -> 서버 RST 패킷
+						std::cout << "[S->C] RST" << std::endl;
+						players[playerPort[capPack.tcpHdr.dest]].rstSCFlag = true;
+						players[playerPort[capPack.tcpHdr.dest]].crtFlag = false;
+						players[playerPort[capPack.tcpHdr.dest]].bMoveFlag = false;
+						players[playerPort[capPack.tcpHdr.dest]].frameTimer = DEFAULT_TIMTER_SET;
+					}
+				}
+			}
 			if (capPack.msgLen < 3) {
 				continue;
 			}
@@ -47,7 +92,7 @@ void PlayerManager::ProcCapture() {
 				BYTE HP;
 				jbuff >> HP;
 				//CRT_CHARACTER(remote, byCode, bySize, byType, ID, Direction, X, Y, HP);
-				CreatePlayer(ID, { X, Y }, capPack.tcpHdr.dest);
+				CreatePlayer(ID, { X, Y }, capPack.tcpHdr.dest, HP);
 			}
 			break;
 			case dfPACKET_SC_CREATE_OTHER_CHARACTER:
@@ -160,6 +205,23 @@ void PlayerManager::ProcCapture() {
 			//	StopPlayerServ(ID, { X, Y });
 			//}
 			//break;
+			case dfPACKET_SC_DAMAGE:
+			{
+				BYTE byCode;
+				jbuff >> byCode;
+				BYTE bySize;
+				jbuff >> bySize;
+				BYTE byType;
+				jbuff >> byType;
+				uint32_t attker;
+				jbuff >> attker;
+				uint32_t target;
+				jbuff >> target;
+				BYTE targetHP;
+				jbuff >> targetHP;
+				DamagePlayer(target, targetHP);
+			}
+			break;
 			case dfPACKET_SC_SYNC:
 			{
 				BYTE byCode;
@@ -187,8 +249,26 @@ void PlayerManager::ProcCapture() {
 
 
 void PlayerManager::FrameMove(BYTE loopDelta) {
-	for (auto iter = players.begin(); iter != players.end(); iter++) {
-		if (iter->second.bMoveFlag) {
+	for (auto iter = players.begin(); iter != players.end(); /*iter++*/) {
+		bool delFlag = false;
+
+		if (iter->second.crtFlag) {
+			if (iter->second.frameTimer > 0) {
+				iter->second.frameTimer--;
+			}
+			else {
+				iter->second.crtFlag = false;
+			}
+		}
+		else if (iter->second.rstCSFlag || iter->second.rstSCFlag || iter->second.finFlag) {
+			if (iter->second.frameTimer > 0) {
+				iter->second.frameTimer--;
+			}
+			else {
+				delFlag = true;
+			}
+		}
+		else if (iter->second.bMoveFlag) {
 			Player* object = &iter->second;
 			switch (object->byDir) {
 			case dfPACKET_MOVE_DIR_LL:
@@ -301,6 +381,13 @@ void PlayerManager::FrameMove(BYTE loopDelta) {
 			default:
 				break;
 			}
+		}
+
+		if (delFlag) {
+			iter = players.erase(iter);
+		}
+		else {
+			iter++;
 		}
 	}
 }
