@@ -7,6 +7,7 @@
 #include "Protocol.h"
 
 #define DEFAULT_TIMTER_SET 100
+#define BUFF_SIZE 20000
 
 struct Point {
 	unsigned int X;
@@ -31,9 +32,14 @@ struct Player
 
 	unsigned short frameTimer = 0;
 
+	//JBuffer* buff;
+
 	Player() {}
 	Player(unsigned int hostID, Point sp, Point cp, unsigned short pt, BYTE hp)
-		: hostID(hostID), servPoint(sp), clntPoint(cp), port(pt), byHP(hp), crtFlag(true), frameTimer(DEFAULT_TIMTER_SET) {}
+		: hostID(hostID), servPoint(sp), clntPoint(cp), port(pt), byHP(hp), crtFlag(true), frameTimer(DEFAULT_TIMTER_SET) 
+	{
+		//buff = new JBuffer(BUFF_SIZE);
+	}
 };
 
 struct PlayerManager {
@@ -42,6 +48,13 @@ struct PlayerManager {
 	std::unordered_map<unsigned int, Player> players;
 	std::mutex playersMtx;
 	std::unordered_map<unsigned short, unsigned int> playerPort;
+
+	uint8_t serverIP[4];
+	//JBuffer* buff;
+	//PlayerManager(uint8_t* ip) {
+	//	memcpy(serverIP, ip, sizeof(uint8_t) * 4);
+	//	buff = new JBuffer(BUFF_SIZE);
+	//}
 
 	void SetCapture(ArpSpoofer* capture_) {
 		capture = capture_;

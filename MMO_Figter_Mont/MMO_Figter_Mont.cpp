@@ -129,7 +129,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    gGrid.SetGridCell(64, 100, 100);
 
    // Capture
-   servCapture.Init(serverIP, true);
+   servCapture.Init(serverIP);// , true);
    servCapture.RunServerCapture(serverIP, listenPort);
    pMgr.SetCapture(&servCapture);
    pMgr.RunProcCapture();

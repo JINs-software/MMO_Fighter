@@ -31,7 +31,7 @@ Grid gGrid;
 ArpSpoofer servCapture;
 
 // MMO_SERVER
-std::string serverIP = "172.29.16.221";
+std::string serverIP = "172.30.1.20";
 unsigned short listenPort = 20000;
 
 // Player

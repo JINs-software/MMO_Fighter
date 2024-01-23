@@ -70,11 +70,11 @@ public:
 		HBRUSH hBrushGray = CreateSolidBrush(RGB(128, 128, 128));
 		HBRUSH hBrushBlack = CreateSolidBrush(RGB(0x0A, 0x0A, 0x0A));
 
-		HBRUSH hBrushGreen0 = CreateSolidBrush(RGB(0, 255, 0));
-		HBRUSH hBrushGreen1 = CreateSolidBrush(RGB(50, 255, 50));
-		HBRUSH hBrushGreen2 = CreateSolidBrush(RGB(100, 255, 100));
-		HBRUSH hBrushGreen3 = CreateSolidBrush(RGB(150, 255, 150));
-		HBRUSH hBrushGreen4 = CreateSolidBrush(RGB(200, 255, 200));
+		HBRUSH hBrushGreen0 = CreateSolidBrush(RGB(0, 128, 0));
+		HBRUSH hBrushGreen1 = CreateSolidBrush(RGB(50, 150, 50));
+		HBRUSH hBrushGreen2 = CreateSolidBrush(RGB(100, 180, 100));
+		HBRUSH hBrushGreen3 = CreateSolidBrush(RGB(150, 210, 150));
+		HBRUSH hBrushGreen4 = CreateSolidBrush(RGB(200, 240, 200));
 		HBRUSH hBrushGreen5 = CreateSolidBrush(RGB(250, 255, 250));
 
 
