@@ -22,6 +22,9 @@
     <Filter Include="Main">
       <UniqueIdentifier>{3c3cb88c-f7fc-405a-8ec1-c346b17ff082}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ThreadPool">
+      <UniqueIdentifier>{6bceda57-f839-4708-b60f-484ac9d03325}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -41,6 +44,9 @@
     </ClInclude>
     <ClInclude Include="MMO_Figter_Mont.h">
       <Filter>Main</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadPool.h">
+      <Filter>ThreadPool</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -37,29 +37,29 @@ public:
 		}
 	}
 
-	void SelectPlayer(int winX, int winY, std::unordered_map<unsigned int, Player>& players) {
+	void SelectPlayer(int winX, int winY, std::unordered_map<unsigned int, Player*>& players) {
 		//winX -= offsetX;
 		//winX /= ((double)cellSize / 64);
 		//winY -= offsetY;
 		//winY /= ((double)cellSize / 64);
 
 		for (auto iter = players.begin(); iter != players.end(); iter++) {
-			Player& player = iter->second;
-			int cX = player.clntPoint.X;
-			int cY = player.clntPoint.Y;
+			Player* player = iter->second;
+			int cX = player->clntPoint.X;
+			int cY = player->clntPoint.Y;
 			cX *= ((double)cellSize / 64);
 			cX += offsetX;
 			cY *= ((double)cellSize / 64);
 			cY += offsetY;
 			// Ellipse(hdc, cX - CILCLE_LEN, cY - CILCLE_LEN, cX + CILCLE_LEN, cY + CILCLE_LEN);
 			if (cX - CILCLE_LEN <= winX && winX <= cX + CILCLE_LEN && cY - CILCLE_LEN <= winY && winY <= cY + CILCLE_LEN) {
-				player.focusOn = !player.focusOn;
+				player->focusOn = !player->focusOn;
 				break;
 			}
 		}
 	}
 
-	void Draw(HDC hdc, int windowWidth, int windowHeight, std::unordered_map<unsigned int, Player>* players = nullptr, std::mutex* playersMtx = nullptr) {
+	void Draw(HDC hdc, int windowWidth, int windowHeight, std::unordered_map<unsigned int, Player*>* players = nullptr, std::mutex* playersMtx = nullptr) {
 		bool textFlag = false;
 
 		HPEN pen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
@@ -102,15 +102,15 @@ public:
 		if (players != nullptr) {
 			playersMtx->lock();
 			for (auto iter = players->begin(); iter != players->end(); iter++) {
-				Player& player = iter->second;
-				Point& sp = player.servPoint;
+				Player* player = iter->second;
+				Point& sp = player->servPoint;
 				int sX = sp.X;
 				int sY = sp.Y;
 				sX *= ((double)cellSize / 64);
 				sX += offsetX;
 				sY *= ((double)cellSize / 64);
 				sY += offsetY;
-				const Point& cp = player.clntPoint;
+				const Point& cp = player->clntPoint;
 				int cX = cp.X;
 				int cY = cp.Y;
 				cX *= ((double)cellSize / 64);
@@ -128,46 +128,46 @@ public:
 				//hBrush = CreateSolidBrush(RGB(0, 255, 0));
 				//oldBrush = (HBRUSH)SelectObject(hdc, hBrush);
 
-				if (player.rstSCFlag && player.rstCSFlag) {
+				if (player->rstSCFlag && player->rstCSFlag) {
 					SelectObject(hdc, hBrushBlack);
 				}
-				else if (player.rstSCFlag) {
+				else if (player->rstSCFlag) {
 					SelectObject(hdc, hBrushRed);
 				}
-				else if (player.rstCSFlag) {
+				else if (player->rstCSFlag) {
 					SelectObject(hdc, hBrushGray);
 				}
-				else if (player.finFlag) {
+				else if (player->finFlag) {
 					SelectObject(hdc, hBrushOrange);
 				}
-				else if (player.focusOn) {
+				else if (player->focusOn) {
 					SelectObject(hdc, hBrushPurple);
 				}
-				else if (player.crtFlag) {
+				else if (player->crtFlag) {
 					SelectObject(hdc, hBrushBlue);
 				}
 				else {
-					if (player.byHP >= 90) {
+					if (player->byHP >= 90) {
 						SelectObject(hdc, hBrushGreen0);
 					}
-					else if (player.byHP >= 70) {
+					else if (player->byHP >= 70) {
 						SelectObject(hdc, hBrushGreen1);
 					}
-					else if (player.byHP >= 50) {
+					else if (player->byHP >= 50) {
 						SelectObject(hdc, hBrushGreen2);
 					}
-					else if (player.byHP >= 30) {
+					else if (player->byHP >= 30) {
 						SelectObject(hdc, hBrushGreen3);
 					}
-					else if (player.byHP >= 10) {
+					else if (player->byHP >= 10) {
 						SelectObject(hdc, hBrushGreen4);
 					}
-					else if (player.byHP >= 0) {
+					else if (player->byHP >= 0) {
 						SelectObject(hdc, hBrushGreen5);
 					}
 				}
 				Ellipse(hdc, cX - CILCLE_LEN, cY - CILCLE_LEN, cX + CILCLE_LEN, cY + CILCLE_LEN);
-				std::wstring  hostIdText = std::to_wstring(player.hostID);
+				std::wstring  hostIdText = std::to_wstring(player->hostID);
 				//const wchar_t* hostIdText = std::to_wstring(player.hostID);
 				TextOut(hdc, cX - 5, cY - 5, hostIdText.c_str(), wcslen(hostIdText.c_str()));
 				//SelectObject(hdc, oldBrush);
