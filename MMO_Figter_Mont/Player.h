@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <mutex>
 #include <iostream>
+#include <sstream>
 #include "ArpSpoofer.h"
 #include "JBuffer.h"
 #include "JNetPool.h"
@@ -89,19 +90,32 @@ struct PlayerManager {
 
 	ThreadPool thPool;
 
-	PlayerManager() : playerPool(sizeof(Player), MAXIM_PLAYER_NUM), thPool(4) {}
+	PlayerManager() : playerPool(sizeof(Player), MAXIM_PLAYER_NUM), thPool(12) {}
 
 	void SetCapture(ArpSpoofer* capture_) {
 		capture = capture_;
 	}
+	void SetServerIP(const std::string& serverIPString) {
+		std::istringstream ss(serverIPString);
+		std::string part;
+		int i = 0;
+		while (std::getline(ss, part, '.') && i < 4) {
+			serverIP[i] = static_cast<uint8_t>(std::stoi(part));
+			i++;
+		}
+	}
 
-	void ProcPacket(stCapturedPacket&& packetBundle);
+	void ProcPacket(stCapturedPacket packetBundle);
 	void ProcCapture();
 
 	void RunProcCapture() {
 		procFlag = true;
 		std::thread thCapture(&PlayerManager::ProcCapture, this);
 		thCapture.detach();
+	}
+	void RunProcFrameMove(BYTE loopMs) {
+		std::thread thFrameMove(&PlayerManager::FrameMove, this, loopMs);
+		thFrameMove.detach();
 	}
 	void StopCapture() {
 		procFlag = false;
@@ -111,7 +125,7 @@ struct PlayerManager {
 
 	// S->C
 	void CreatePlayer(unsigned int hostID, Point sp, unsigned short port, BYTE hp) {
-		playersMtx.lock();
+		//playersMtx.lock();
 		if (players.find(hostID) == players.end()) {
 			if (playerPort.find(port) != playerPort.end()) {
 				playerPort.erase(port);
@@ -131,26 +145,26 @@ struct PlayerManager {
 			// -> 객체를 삭제한다기보다 객체의 내용을 새로 갱신해주는 방식으로 ..
 
 			//players[hostID].servPoint = sp;
-			WOA_Player_Lock(players[hostID]);
+			//WOA_Player_Lock(players[hostID]);
 			players[hostID]->Set(hostID, sp, sp, port, hp);
-			WOA_Player_Unlock(players[hostID]);
+			//WOA_Player_Unlock(players[hostID]);
 			playerPort[port] = hostID;	// 중복된 키의 경우 값 갱신
 		}
-		playersMtx.unlock();
+		//playersMtx.unlock();
 	}
 	void DeletePlayer(unsigned int hostID) {
-		playersMtx.lock();
+		//playersMtx.lock();
 		if (players.find(hostID) != players.end()) {
 			unsigned short port = players[hostID]->port;
 			playerPort.erase(port);
 			players.erase(hostID);
 			//std::cout << "DeletePlayer, id: " << hostID << ", port: " << port << std::endl;
 		}
-		playersMtx.unlock();
+		//playersMtx.unlock();
 	}
 
 	void MovePlayerServ(unsigned int hostID, Point sp) {
-		playersMtx.lock();
+		//playersMtx.lock();
 		if (players.find(hostID) != players.end()) {
 			//Player& player = players[hostID];
 			//player.servPoint = sp;
@@ -158,10 +172,10 @@ struct PlayerManager {
 			player->servPoint = sp;
 			//std::cout << "MovePlayerServ, id: " << hostID << ", x: " << player.servPoint.X << ", y: " << player.servPoint.Y << std::endl;
 		}
-		playersMtx.unlock();
+		//playersMtx.unlock();
 	}
 	void StopPlayerServ(unsigned int hostID, Point sp) {
-		playersMtx.lock();
+		//playersMtx.lock();
 		if (players.find(hostID) != players.end()) {
 			//Player& player = players[hostID];
 			//player.servPoint = sp;
@@ -169,10 +183,10 @@ struct PlayerManager {
 			player->servPoint = sp;
 			//std::cout << "MovePlayerServ, id: " << hostID << ", x: " << player.servPoint.X << ", y: " << player.servPoint.Y << std::endl;
 		}
-		playersMtx.unlock();
+		//playersMtx.unlock();
 	}
 	void MovePlayerClnt(unsigned short port, Point cp, BYTE dir) {
-		playersMtx.lock();
+		//playersMtx.lock();
 		if (playerPort.find(port) != playerPort.end()) {
 			unsigned int hostID = playerPort[port];
 			if (players.find(hostID) != players.end()) {
@@ -189,10 +203,10 @@ struct PlayerManager {
 				//std::cout << "MovePlayerClnt, id: " << hostID << ", x: " << player.clntPoint.X << ", y: " << player.clntPoint.Y << std::endl;
 			}
 		}
-		playersMtx.unlock();
+		//playersMtx.unlock();
 	}
 	void StopPlayerClnt(unsigned short port, Point cp) {
-		playersMtx.lock();
+		//playersMtx.lock();
 		if (playerPort.find(port) != playerPort.end()) {
 			unsigned int hostID = playerPort[port];
 			if (players.find(hostID) != players.end()) {
@@ -207,10 +221,10 @@ struct PlayerManager {
 				//std::cout << "StopPlayerClnt, id: " << hostID << ", x: " << player.clntPoint.X << ", y: " << player.clntPoint.Y << std::endl;
 			}
 		}
-		playersMtx.unlock();
+		//playersMtx.unlock();
 	}
 	void DamagePlayer(unsigned int hostID, BYTE hp) {
-		playersMtx.lock();
+		//playersMtx.lock();
 		if (players.find(hostID) != players.end()) {
 			//Player& player = players[hostID];
 			//player.byHP = hp;
@@ -218,10 +232,10 @@ struct PlayerManager {
 			player->byHP = hp;
 			//std::cout << "MovePlayerServ, id: " << hostID << ", x: " << player.servPoint.X << ", y: " << player.servPoint.Y << std::endl;
 		}
-		playersMtx.unlock();
+		//playersMtx.unlock();
 	}
 	void SyncPlayer(unsigned int hostID, Point p) {
-		playersMtx.lock();
+		//playersMtx.lock();
 		if (players.find(hostID) != players.end()) {
 			//Player& player = players[hostID];
 			//player.servPoint = p;
@@ -231,7 +245,7 @@ struct PlayerManager {
 			player->clntPoint = p;
 			//std::cout << "SyncPlayer, id: " << hostID << ", x: " << p.X << ", y: " << p.Y << std::endl;
 		}
-		playersMtx.unlock();
+		//playersMtx.unlock();
 	}
 	
 };

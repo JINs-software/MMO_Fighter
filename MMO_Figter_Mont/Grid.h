@@ -59,10 +59,50 @@ public:
 		}
 	}
 
-	void Draw(HDC hdc, int windowWidth, int windowHeight, std::unordered_map<unsigned int, Player*>* players = nullptr, std::mutex* playersMtx = nullptr) {
-		bool textFlag = false;
+	void DrawGrid(HDC hdc, int windowWidth, int windowHeight) {// std::unordered_map<unsigned int, Player*>* players = nullptr, std::mutex* playersMtx = nullptr) {
+		//HPEN pen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
+		//
+		//HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, GetStockObject(NULL_BRUSH));
+		//SelectObject(hdc, pen);
+		//for (size_t i = 0; i < cells.size(); ++i) {
+		//	for (size_t j = 0; j < cells[i].size(); ++j) {
+		//		int x = (cells[i][j].x * cellSize) + offsetX;
+		//		int y = (cells[i][j].y * cellSize) + offsetY;
+		//
+		//		// 테두리 그리기
+		//		//HPEN pen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
+		//		//HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, GetStockObject(NULL_BRUSH));
+		//		//SelectObject(hdc, pen);
+		//		Rectangle(hdc, x, y, x + cellSize, y + cellSize);
+		//		//
+		//		//SelectObject(hdc, oldBrush);
+		//		//DeleteObject(pen);
+		//
+		//		// 추가 정보를 사용하여 셀을 그리거나 다양한 작업 수행 가능
+		//	}
+		//}
 
-		HPEN pen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
+		int lx = cells[0][0].x * cellSize + offsetX;
+		int rx = cells[0][cells[0].size() - 1].x * cellSize + offsetX + cellSize;
+		int y = cells[0][0].y * cellSize + offsetY;
+		for (size_t i = 0; i < cells.size(); ++i) {
+			MoveToEx(hdc, lx, y, NULL);
+			LineTo(hdc, rx, y);
+			y += cellSize;
+		}
+
+		int ty = cells[0][0].y * cellSize + offsetY;
+		int dy = cells[cells.size() - 1][0].y * cellSize + offsetY + cellSize;
+		int x = cells[0][0].x * cellSize + offsetX;
+		for (size_t i = 0; i < cells[0].size(); ++i) {
+			MoveToEx(hdc, x, ty, NULL);
+			LineTo(hdc, x, dy);
+			x += cellSize;
+		}
+		//SelectObject(hdc, oldBrush);
+		//DeleteObject(pen);
+	}
+	void DrawPlayer(HDC hdc, int windowWidth, int windowHeight, std::unordered_map<unsigned int, Player*>* players = nullptr, std::mutex* playersMtx = nullptr) {
 		HBRUSH hBrushRed = CreateSolidBrush(RGB(255, 0, 0));
 		HBRUSH hBrushOrange = CreateSolidBrush(RGB(0xFF, 0x7F, 0));
 		HBRUSH hBrushPurple = CreateSolidBrush(RGB(0x8B, 0x0, 0xFF));
@@ -77,30 +117,9 @@ public:
 		HBRUSH hBrushGreen4 = CreateSolidBrush(RGB(200, 240, 200));
 		HBRUSH hBrushGreen5 = CreateSolidBrush(RGB(250, 255, 250));
 
-
-		HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, GetStockObject(NULL_BRUSH));
-		SelectObject(hdc, pen);
-		for (size_t i = 0; i < cells.size(); ++i) {
-			for (size_t j = 0; j < cells[i].size(); ++j) {
-				int x = (cells[i][j].x * cellSize) + offsetX;
-				int y = (cells[i][j].y * cellSize) + offsetY;
-
-				// 테두리 그리기
-				//HPEN pen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
-				//HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, GetStockObject(NULL_BRUSH));
-				//SelectObject(hdc, pen);
-				Rectangle(hdc, x, y, x + cellSize, y + cellSize);
-				//
-				//SelectObject(hdc, oldBrush);
-				//DeleteObject(pen);
-
-				// 추가 정보를 사용하여 셀을 그리거나 다양한 작업 수행 가능
-			}
-		}
-		
-		oldBrush = (HBRUSH)SelectObject(hdc, hBrushGreen0);
+		HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, hBrushGreen0);
 		if (players != nullptr) {
-			playersMtx->lock();
+			//playersMtx->lock();
 			for (auto iter = players->begin(); iter != players->end(); iter++) {
 				Player* player = iter->second;
 				Point& sp = player->servPoint;
@@ -118,16 +137,6 @@ public:
 				cY *= ((double)cellSize / 64);
 				cY += offsetY;
 				
-				//HBRUSH hBrush = CreateSolidBrush(RGB(255, 0, 0));
-				//HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, hBrush);
-				//SelectObject(hdc, hBrushServ);
-				//Ellipse(hdc, sX - 20, sY - 20, sX + 20, sY + 20);
-				//SelectObject(hdc, oldBrush);
-				//DeleteObject(hBrush);
-
-				//hBrush = CreateSolidBrush(RGB(0, 255, 0));
-				//oldBrush = (HBRUSH)SelectObject(hdc, hBrush);
-
 				if (player->rstSCFlag && player->rstCSFlag) {
 					SelectObject(hdc, hBrushBlack);
 				}
@@ -173,18 +182,10 @@ public:
 				//SelectObject(hdc, oldBrush);
 				//DeleteObject(hBrush);
 			}
-			playersMtx->unlock();
+			//playersMtx->unlock();
 		}
 		SelectObject(hdc, oldBrush);
 
-		DeleteObject(pen);
-		//HBRUSH hBrushRed = CreateSolidBrush(RGB(255, 0, 0));
-		//HBRUSH hBrushGreen = CreateSolidBrush(RGB(0, 255, 0));
-		//HBRUSH hBrushOrange = CreateSolidBrush(RGB(0xFF, 0x7F, 0));
-		//HBRUSH hBrushPurple = CreateSolidBrush(RGB(0x8B, 0x0, 0xFF));
-		//HBRUSH hBrushBlue = CreateSolidBrush(RGB(0, 0, 255));
-		//HBRUSH hBrushGray = CreateSolidBrush(RGB(128, 128, 128));
-		//HBRUSH hBrushBlack = CreateSolidBrush(RGB(0x0A, 0x0A, 0x0A));
 		DeleteObject(hBrushRed);
 		DeleteObject(hBrushOrange);
 		DeleteObject(hBrushPurple);
@@ -199,14 +200,6 @@ public:
 		DeleteObject(hBrushGreen4);
 		DeleteObject(hBrushGreen5);
 	}
-	//void DrawPlayer(HDC hdc, PlayerManager* pm) {
-	//	pm->pmapMtx.lock();
-	//	pm->players.begin();
-	//	for (auto it = pm->players.begin(); it != pm->players.end(); it++) {
-	//		Player&p = it->second;
-	//		
-	//	}
-	//}
 
 	void MoveLeft() {
 		offsetX += cellSize * 2;

@@ -17,17 +17,30 @@ public:
         }
     }
 
-    // 멤버 함수를 스레드 풀에 추가하는 함수
-    template<typename T, typename... Args>
-    void Enqueue(void (T::* memberFunction)(Args...), T* obj, Args... args) {
+    //// 멤버 함수를 스레드 풀에 추가하는 함수
+    //template<typename T, typename... Args>
+    //void Enqueue(void (T::* memberFunction)(Args...), T* obj, Args... args) {
+    //    {
+    //        std::unique_lock<std::mutex> lock(queueMutex);
+    //        // 작업을 큐에 추가합니다.
+    //        tasks.emplace([=]() { std::invoke(memberFunction, obj, args...); });
+    //    }
+    //    // 작업이 추가되었음을 알리기 위해 이벤트를 시그널합니다.
+    //    SetEvent(hEvent);
+    //}
+    template<typename T>
+    void Enqueue(void (T::* memberFunction)(stCapturedPacket), T* obj, stCapturedPacket packet) {
         {
             std::unique_lock<std::mutex> lock(queueMutex);
             // 작업을 큐에 추가합니다.
-            tasks.emplace([=]() { std::invoke(memberFunction, obj, args...); });
+            tasks.emplace([=, func = std::move(memberFunction), o = std::move(obj), p = std::move(packet)]() {
+                std::invoke(func, o, p); // packet을 그대로 전달
+                });
         }
         // 작업이 추가되었음을 알리기 위해 이벤트를 시그널합니다.
         SetEvent(hEvent);
     }
+
 
     // 소멸자
     ~ThreadPool() {

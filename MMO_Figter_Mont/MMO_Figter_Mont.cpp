@@ -17,6 +17,34 @@ BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
+// Window Draw 함수
+void UpdateGridBackground(HWND hWnd) {
+    //// 메모리 DC 클리어
+    //PatBlt(grid_hMemDC, 0, 0, g_MemDC_Rect.right, g_MemDC_Rect.bottom, WHITENESS);
+    //gGrid.DrawGrid(grid_hMemDC, g_MemDC_Rect.right, g_MemDC_Rect.bottom);// , & pMgr.players, & pMgr.playersMtx);
+}
+void WindowPaintPlayer(HWND hWnd, HDC hdc) {
+    /*
+    // 메모리 DC 클리어
+    PatBlt(g_hMemDC, 0, 0, g_MemDC_Rect.right, g_MemDC_Rect.bottom, WHITENESS);
+    //gGrid.DrawGrid(g_hMemDC, g_MemDC_Rect.right, g_MemDC_Rect.bottom, &pMgr.players, &pMgr.playersMtx);
+    gGrid.DrawPlayer(g_hMemDC, g_MemDC_Rect.right, g_MemDC_Rect.bottom, &pMgr.players, &pMgr.playersMtx);
+    */
+
+    //PatBlt(g_hMemDC, 0, 0, g_MemDC_Rect.right, g_MemDC_Rect.bottom, WHITENESS);
+    //gGrid.DrawGrid(g_hMemDC, g_MemDC_Rect.right, g_MemDC_Rect.bottom);// , & pMgr.players, & pMgr.playersMtx);
+
+    //UpdateGridBackground(hWnd);
+    //PAINTSTRUCT ps;
+    //HDC hdc = BeginPaint(hWnd, &ps);
+    //HDC hdc = GetWindowDC(hWnd);
+    //BitBlt(hdc, 0, 0, g_MemDC_Rect.right, g_MemDC_Rect.bottom, grid_hMemDC, 0, 0, SRCCOPY);
+    //BitBlt(hdc, 0, 0, g_MemDC_Rect.right, g_MemDC_Rect.bottom, g_hMemDC, 0, 0, SRCCOPY);
+
+    //EndPaint(hWnd, &ps);
+    //ReleaseDC(hWnd, hdc);
+}
+
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
                      _In_ LPWSTR    lpCmdLine,
@@ -115,24 +143,30 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    
    // Draw
    HDC hdc = GetDC(hWnd);
-   GetClientRect(hWnd, &g_MemDC_Rect);
-   g_hMemDC_Bitmap = CreateCompatibleBitmap(hdc, g_MemDC_Rect.right, g_MemDC_Rect.bottom);
-   g_hMemDC = CreateCompatibleDC(hdc);
-   ReleaseDC(hWnd, hdc);
-   g_hMemDC_BitmapOld = (HBITMAP)SelectObject(g_hMemDC, g_hMemDC_Bitmap);
+   //GetClientRect(hWnd, &g_MemDC_Rect);
+   GetClientRect(hWnd, &grid_MemDC_Rect);
 
-   //HPEN pen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
-   //HBRUSH hBrushServ = CreateSolidBrush(RGB(255, 0, 0));
-   //HBRUSH hBrushClnt = CreateSolidBrush(RGB(0, 255, 0));
+   //g_hMemDC_Bitmap = CreateCompatibleBitmap(hdc, g_MemDC_Rect.right, g_MemDC_Rect.bottom);
+   //g_hMemDC = CreateCompatibleDC(hdc);
+   //g_hMemDC_BitmapOld = (HBITMAP)SelectObject(g_hMemDC, g_hMemDC_Bitmap);
+
+   grid_hMemDC_Bitmap = CreateCompatibleBitmap(hdc, grid_MemDC_Rect.right, grid_MemDC_Rect.bottom);
+   grid_hMemDC = CreateCompatibleDC(hdc);
+   grid_hMemDC_BitmapOld = (HBITMAP)SelectObject(grid_hMemDC, grid_hMemDC_Bitmap);
+
+   ReleaseDC(hWnd, hdc);
 
    // Grid
    gGrid.SetGridCell(64, 100, 100);
+   //UpdateGridBackground(hWnd);
 
    // Capture
    servCapture.Init(serverIP);// , true);
    servCapture.RunServerCapture(serverIP, listenPort);
    pMgr.SetCapture(&servCapture);
+   pMgr.SetServerIP(serverIP);
    pMgr.RunProcCapture();
+   pMgr.RunProcFrameMove(WaitMS);
 
    // 타이머
    SetTimer(hWnd, timer120ms, 120, NULL);
@@ -188,10 +222,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         //case timer40ms:
         //    pMgr.FrameMove()
         //    break;
-        case timer120ms:
-            pMgr.FrameMove(3);
-            InvalidateRect(hWnd, NULL, TRUE);
-            break;
+        //case timer40ms:
+        //    pMgr.RunProcFrameMove(1);
+        
+        //case timer120ms: {
+        //    //pMgr.FrameMove(3);
+        //    //InvalidateRect(hWnd, NULL, TRUE);
+        //    SetThreadPriority(GetCurrentThread(), +1);
+        //    //InvalidateRect(hWnd, NULL, TRUE);
+        //    HDC hdc = GetWindowDC(hWnd);
+        //    WindowPaintPlayer(hWnd, hdc);  // 윈도우를 다시 그림
+        //    ReleaseDC(hWnd, hdc);
+        //    SetThreadPriority(GetCurrentThread(), 0);
+        //}
+        //    break;
+
         default:
             break;
         }
@@ -200,20 +245,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_PAINT:
         {
             // 메모리 DC 클리어
-            PatBlt(g_hMemDC, 0, 0, g_MemDC_Rect.right, g_MemDC_Rect.bottom, WHITENESS);
-            gGrid.Draw(g_hMemDC, g_MemDC_Rect.right, g_MemDC_Rect.bottom, &pMgr.players, &pMgr.playersMtx);
-            
+            //PatBlt(g_hMemDC, 0, 0, g_MemDC_Rect.right, g_MemDC_Rect.bottom, WHITENESS);
+            //gGrid.DrawGrid(g_hMemDC, g_MemDC_Rect.right, g_MemDC_Rect.bottom);
+            PatBlt(grid_hMemDC, 0, 0, grid_MemDC_Rect.right, grid_MemDC_Rect.bottom, WHITENESS);
+            gGrid.DrawGrid(grid_hMemDC, grid_MemDC_Rect.right, grid_MemDC_Rect.bottom);
+
+            //gGrid.Draw(g_hMemDC, g_MemDC_Rect.right, g_MemDC_Rect.bottom, &pMgr.players, &pMgr.playersMtx);
+
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
-            // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
-            RECT rect;
-            //GetClientRect(hWnd, &rect);
-            //gGrid.Draw(hdc, rect.right, rect.bottom);
-            //gGrid.Draw(hdc, rect.right, rect.bottom, &pMgr.players, &pMgr.playersMtx);
-
-            BitBlt(hdc, 0, 0, g_MemDC_Rect.right, g_MemDC_Rect.bottom, g_hMemDC, 0, 0, SRCCOPY);
-
+            //BitBlt(hdc, 0, 0, g_MemDC_Rect.right, g_MemDC_Rect.bottom, g_hMemDC, 0, 0, SRCCOPY);
+            BitBlt(hdc, 0, 0, grid_MemDC_Rect.right, grid_MemDC_Rect.bottom, grid_hMemDC, 0, 0, SRCCOPY);
             EndPaint(hWnd, &ps);
+
         }
         break;
     case WM_LBUTTONDOWN:
@@ -236,58 +280,85 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         else { gGrid.cellSize = 5 > gGrid.cellSize - 5 ? 5 : gGrid.cellSize - 5; }
 
         // 윈도우를 다시 그리도록 강제
+        //UpdateGridBackground(hWnd);
         InvalidateRect(hWnd, NULL, TRUE);
     }
     break;
     case WM_KEYDOWN:
     {
+        bool flag = false;
         switch (wParam) {
         case 'W':
+            flag = true;
             gGrid.MoveUp();
             break;
-            gGrid.MoveUp();
         case 'w':
+            flag = true;
+            gGrid.MoveUp();
             break;
         case 'A':
+            flag = true;
             gGrid.MoveLeft();
             break;
         case 'a':
+            flag = true;
             gGrid.MoveLeft();
             break;
         case 'S':
+            flag = true;
             gGrid.MoveDown();
             break;
         case 's':
+            flag = true;
             gGrid.MoveDown();
             break;
         case 'D':
+            flag = true;
             gGrid.MoveRight();
             break;
         case 'd':
+            flag = true;
             gGrid.MoveRight();
             break;
         }
-        // 윈도우를 다시 그리도록 강제
-        InvalidateRect(hWnd, NULL, TRUE);
+
+        if (flag) {
+            // 윈도우를 다시 그리도록 강제
+            //UpdateGridBackground(hWnd);
+            InvalidateRect(hWnd, NULL, TRUE);
+        }
     }
     break;
     case WM_SIZE:
     {
-        if (g_hMemDC_Bitmap) {
-            DeleteObject(g_hMemDC_Bitmap);
+        //if (g_hMemDC_Bitmap) {
+        //    DeleteObject(g_hMemDC_Bitmap);
+        //}
+        //if (g_hMemDC) {
+        //    DeleteObject(g_hMemDC);
+        //}
+        if (grid_hMemDC_Bitmap) {
+            DeleteObject(grid_hMemDC_Bitmap);
         }
-        if (g_hMemDC) {
-            DeleteObject(g_hMemDC);
+        if (grid_hMemDC) {
+            DeleteObject(grid_hMemDC);
         }
 
         HDC hdc = GetDC(hWnd);
-        GetClientRect(hWnd, &g_MemDC_Rect);
-        g_hMemDC_Bitmap = CreateCompatibleBitmap(hdc, g_MemDC_Rect.right, g_MemDC_Rect.bottom);
-        g_hMemDC = CreateCompatibleDC(hdc);
+        //GetClientRect(hWnd, &g_MemDC_Rect);
+        GetClientRect(hWnd, &grid_MemDC_Rect);
+
+        //g_hMemDC_Bitmap = CreateCompatibleBitmap(hdc, g_MemDC_Rect.right, g_MemDC_Rect.bottom);
+        //g_hMemDC = CreateCompatibleDC(hdc);
+        //g_hMemDC_BitmapOld = (HBITMAP)SelectObject(g_hMemDC, g_hMemDC_Bitmap);
+
+        grid_hMemDC_Bitmap = CreateCompatibleBitmap(hdc, grid_MemDC_Rect.right, grid_MemDC_Rect.bottom);
+        grid_hMemDC = CreateCompatibleDC(hdc);
+        grid_hMemDC_BitmapOld = (HBITMAP)SelectObject(grid_hMemDC, grid_hMemDC_BitmapOld);
+
         ReleaseDC(hWnd, hdc);
-        g_hMemDC_BitmapOld = (HBITMAP)SelectObject(g_hMemDC, g_hMemDC_Bitmap);
 
-
+        //UpdateGridBackground(hWnd);
         InvalidateRect(hWnd, NULL, TRUE);
         return TRUE;
     }
@@ -295,6 +366,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_DESTROY:
         servCapture.stopCapture();
         pMgr.StopCapture();
+
+        //if (g_hMemDC_Bitmap) {
+        //    DeleteObject(g_hMemDC_Bitmap);
+        //}
+        //if (g_hMemDC) {
+        //    DeleteObject(g_hMemDC);
+        //}
+        //if (grid_hMemDC_Bitmap) {
+        //    DeleteObject(grid_hMemDC_Bitmap);
+        //}
+        //if (grid_hMemDC_Bitmap) {
+        //    DeleteObject(grid_hMemDC_Bitmap);
+        //}
+
         PostQuitMessage(0);
         break;
     default:
