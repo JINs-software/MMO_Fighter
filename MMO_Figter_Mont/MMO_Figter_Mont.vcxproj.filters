@@ -25,6 +25,9 @@
     <Filter Include="ThreadPool">
       <UniqueIdentifier>{6bceda57-f839-4708-b60f-484ac9d03325}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ThreadSafe">
+      <UniqueIdentifier>{32bdef8b-08c0-4897-9224-e4865521092b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -47,6 +50,9 @@
     </ClInclude>
     <ClInclude Include="ThreadPool.h">
       <Filter>ThreadPool</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadSafeUMap.h">
+      <Filter>ThreadSafe</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

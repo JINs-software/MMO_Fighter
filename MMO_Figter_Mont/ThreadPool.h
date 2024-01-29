@@ -5,6 +5,12 @@
 #include <mutex>
 #include <functional>
 
+//#include <atomic>
+//#include <functional>
+//#include <queue>
+//#include <thread>
+//#include <vector>
+
 // 스레드 풀 클래스 정의
 class ThreadPool {
 public:
@@ -97,27 +103,160 @@ private:
     }
 };
 
-// 예제 클래스 정의
-class Example {
+/***************/
+/* 락-프리 방식*/
+/***************/
+/*
+class ThreadPool {
 public:
-    // 멤버 함수
-    void MemberFunction(int i, double d) {
-        std::cout << "Member function called with: " << i << " and " << d << std::endl;
+    ThreadPool(size_t numThreads) : stop(false) {
+        for (size_t i = 0; i < numThreads; ++i) {
+            threads.emplace_back(&ThreadPool::ThreadMain, this);
+        }
+    }
+
+    template<typename T>
+    void Enqueue(void (T::* memberFunction)(stCapturedPacket), T* obj, stCapturedPacket packet) {
+        tasks.push([=, func = std::move(memberFunction), o = std::move(obj), p = std::move(packet)]() {
+            std::invoke(func, o, p);
+            });
+    }
+
+    ~ThreadPool() {
+        stop = true;
+        for (auto& thread : threads) {
+            thread.join();
+        }
+    }
+
+private:
+    std::vector<std::thread> threads;
+    std::atomic<bool> stop;
+
+    // Lock-Free Queue Implementation
+    template<typename T>
+    class LockFreeQueue {
+    public:
+        LockFreeQueue() : head(new Node), tail(head.load()) {}
+
+        ~LockFreeQueue() {
+            T output;
+            while (pop(output));
+            delete head.load();
+        }
+
+        void push(const T& value) {
+            Node* newNode = new Node(value);
+            Node* tailSnapshot = tail.load();
+            while (true) {
+                Node* next = tailSnapshot->next.load();
+                if (!next) {
+                    if (tailSnapshot->next.compare_exchange_weak(next, newNode)) {
+                        break;
+                    }
+                }
+                else {
+                    tail.compare_exchange_weak(tailSnapshot, next);
+                    tailSnapshot = tail.load();
+                }
+            }
+            tail.compare_exchange_weak(tailSnapshot, newNode);
+        }
+
+        bool pop(T& value) {
+            Node* headSnapshot = head.load();
+            while (true) {
+                Node* next = headSnapshot->next.load();
+                if (!next) {
+                    return false;
+                }
+                if (head.compare_exchange_weak(headSnapshot, next)) {
+                    value = next->data;
+                    delete headSnapshot;
+                    return true;
+                }
+            }
+        }
+
+    private:
+        struct Node {
+            T data;
+            std::atomic<Node*> next;
+
+            Node() : next(nullptr) {}
+            Node(const T& value) : data(value), next(nullptr) {}
+        };
+
+        std::atomic<Node*> head;
+        std::atomic<Node*> tail;
+    };
+
+    LockFreeQueue<std::function<void()>> tasks;
+
+    void ThreadMain() {
+        while (!stop) {
+            std::function<void()> task;
+            if (tasks.pop(task)) {
+                task();
+            }
+            else {
+                std::this_thread::yield();
+            }
+        }
     }
 };
+*/
 
-//int main() {
-//    // 예제 객체 생성
-//    Example example;
-//    // 스레드 풀 생성
-//    ThreadPool pool(4);
-//
-//    // 작업을 스레드 풀에 추가
-//    for (int i = 0; i < 8; ++i) {
-//        pool.Enqueue(&Example::MemberFunction, &example, i, 3.14);
-//        // 컴파일러에게 매개변수의 타입을 명시적으로 전달합니다.
-//        // MemberFunction의 매개변수는 int와 double입니다.
-//    }
-//
-//    return 0;
-//}
+/***************/
+/* 스핀-락 방식*/
+/***************/
+/*
+class ThreadPool {
+public:
+    ThreadPool(size_t numThreads) : stop(false) {
+        for (size_t i = 0; i < numThreads; ++i) {
+            threads.emplace_back(&ThreadPool::ThreadMain, this);
+        }
+    }
+
+    template<typename T>
+    void Enqueue(void (T::* memberFunction)(stCapturedPacket), T* obj, stCapturedPacket packet) {
+        std::lock_guard<std::mutex> lock(queueMutex);
+        tasks.emplace([=, func = std::move(memberFunction), o = std::move(obj), p = std::move(packet)]() {
+            std::invoke(func, o, p);
+            });
+    }
+
+    ~ThreadPool() {
+        stop = true;
+        for (auto& thread : threads) {
+            thread.join();
+        }
+    }
+
+private:
+    std::vector<std::thread> threads;
+    std::queue<std::function<void()>> tasks;
+    std::mutex queueMutex;
+    std::atomic<bool> stop;
+
+    void ThreadMain() {
+        while (!stop) {
+            std::function<void()> task;
+            {
+                std::lock_guard<std::mutex> lock(queueMutex);
+                if (!tasks.empty()) {
+                    task = std::move(tasks.front());
+                    tasks.pop();
+                }
+            }
+            if (task) {
+                task();
+            }
+            else {
+                std::this_thread::yield();
+            }
+        }
+    }
+};
+*/

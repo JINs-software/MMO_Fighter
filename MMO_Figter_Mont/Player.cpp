@@ -23,103 +23,71 @@ void WOA_Player_Unlock(Player* pp) {
 void PlayerManager::ProcPacket(stCapturedPacket packetBundle)
 {
 	// S->C 인지 C->S 인지 비교
+	bool StoC = false;
 	unsigned int hostID;
+	unsigned short port = 0;
 	Player* player = nullptr;
 	if (memcmp(packetBundle.ipHdr.srcIP, serverIP, sizeof(serverIP)) == 0) {
 		// S->C
-		if (playerPort.find(packetBundle.tcpHdr.dest) != playerPort.end()) {
-			if (players.find(playerPort[packetBundle.tcpHdr.dest]) != players.end()) {
-				player = players[playerPort[packetBundle.tcpHdr.dest]];
-				hostID = player->hostID;
+		StoC = true;
+		if (playerPort.find(packetBundle.tcpHdr.dest, hostID)) {
+			port = packetBundle.tcpHdr.dest;
+		}
+		if (port != 0) {
+			if (players.find(hostID, player)) {
+				if (player->hostID != hostID) {
+					std::cout << "player->hostID != hostID !" << std::endl;
+					assert(false);
+				}
 			}
 		}
 	}
 	else if (memcmp(packetBundle.ipHdr.destIP, serverIP, sizeof(serverIP)) == 0) {
 		// C->S
-		if (playerPort.find(packetBundle.tcpHdr.source) != playerPort.end()) {
-			if (players.find(playerPort[packetBundle.tcpHdr.source]) != players.end()) {
-				player = players[playerPort[packetBundle.tcpHdr.source]];
-				hostID = player->hostID;
+		if (playerPort.find(packetBundle.tcpHdr.source, hostID)) {
+			port = packetBundle.tcpHdr.source;
+		}
+		if (port != 0) {
+			if (players.find(hostID, player)) {
+				if (player->hostID != hostID) {
+					std::cout << "player->hostID != hostID !" << std::endl;
+					assert(false);
+				}
 			}
 		}
 	}
 	else {
 		// Create 메시지이기에 등록된 port가 없을 수 있다.
 	}
-	//if (player == nullptr) {
-	//	return;
-	//}
-
 	// CreateMsg 전이기에 등록된 포트가 없을 수 있다. 이러한 경우 그냥 플레이어에 대한 개별 락 없이 CreateMsg를 처리하도록 유도한다.
 	// 만약 플레이어 정보가 있다면 락을 건다.
 
-	if (player != nullptr) {
-		WOA_Player_Lock(player);
-	}
-
 	bool closeFlag = false;
-	if (packetBundle.tcpHdr.fin) {
-		if (playerPort.find(packetBundle.tcpHdr.source) != playerPort.end()) {
-			if (players.find(playerPort[packetBundle.tcpHdr.source]) != players.end()) {
-				// 클라이언트 -> 서버 FIN 패킷
-				std::cout << "[C->S] FIN" << std::endl;
-				//players[playerPort[packetBundle.tcpHdr.source]].finFlag = true;
-				//players[playerPort[packetBundle.tcpHdr.source]].crtFlag = false;
-				//players[playerPort[packetBundle.tcpHdr.source]].bMoveFlag = false;
-				//players[playerPort[packetBundle.tcpHdr.source]].frameTimer = DEFAULT_TIMTER_SET;
-				players[playerPort[packetBundle.tcpHdr.source]]->finFlag = true;
-				players[playerPort[packetBundle.tcpHdr.source]]->crtFlag = false;
-				players[playerPort[packetBundle.tcpHdr.source]]->bMoveFlag = false;
-				players[playerPort[packetBundle.tcpHdr.source]]->frameTimer = DEFAULT_TIMTER_SET;
-			}
+	if (player != nullptr) {
+		//WOA_Player_Lock(player);
 
+		if (packetBundle.tcpHdr.fin) {
+			player->finFlag = true;
+			player->crtFlag = false;
+			player->bMoveFlag = false;
+			player->frameTimer = DEFAULT_TIMTER_SET;
+			closeFlag = true;
 		}
-		else if (playerPort.find(packetBundle.tcpHdr.dest) != playerPort.end()) {
-			if (players.find(playerPort[packetBundle.tcpHdr.dest]) != players.end()) {
-				// 클라이언트 -> 서버 FIN 패킷
-				std::cout << "[S->C] FIN" << std::endl;
-				//players[playerPort[packetBundle.tcpHdr.dest]].finFlag = true;
-				//players[playerPort[packetBundle.tcpHdr.dest]].crtFlag = false;
-				//players[playerPort[packetBundle.tcpHdr.dest]].bMoveFlag = false;
-				//players[playerPort[packetBundle.tcpHdr.dest]].frameTimer = DEFAULT_TIMTER_SET;
-				players[playerPort[packetBundle.tcpHdr.dest]]->finFlag = true;
-				players[playerPort[packetBundle.tcpHdr.dest]]->crtFlag = false;
-				players[playerPort[packetBundle.tcpHdr.dest]]->bMoveFlag = false;
-				players[playerPort[packetBundle.tcpHdr.dest]]->frameTimer = DEFAULT_TIMTER_SET;
+		if (packetBundle.tcpHdr.rst) {
+			if (StoC) {
+				player->rstSCFlag = true;
+				player->crtFlag = false;
+				player->bMoveFlag = false;
+				player->frameTimer = DEFAULT_TIMTER_SET;
 			}
-		}
-		closeFlag = true;
-	}
-	if (packetBundle.tcpHdr.rst) {
-		if (playerPort.find(packetBundle.tcpHdr.source) != playerPort.end()) {
-			if (players.find(playerPort[packetBundle.tcpHdr.source]) != players.end()) {
-				// 클라이언트 -> 서버 RST 패킷
-				std::cout << "[C->S] RST" << std::endl;
-				//players[playerPort[packetBundle.tcpHdr.source]].rstCSFlag = true;
-				//players[playerPort[packetBundle.tcpHdr.source]].crtFlag = false;
-				//players[playerPort[packetBundle.tcpHdr.source]].bMoveFlag = false;
-				//players[playerPort[packetBundle.tcpHdr.source]].frameTimer = DEFAULT_TIMTER_SET;
-				players[playerPort[packetBundle.tcpHdr.source]]->rstCSFlag = true;
-				players[playerPort[packetBundle.tcpHdr.source]]->crtFlag = false;
-				players[playerPort[packetBundle.tcpHdr.source]]->bMoveFlag = false;
-				players[playerPort[packetBundle.tcpHdr.source]]->frameTimer = DEFAULT_TIMTER_SET;
+			else {
+				player->rstCSFlag = true;
+				player->crtFlag = false;
+				player->bMoveFlag = false;
+				player->frameTimer = DEFAULT_TIMTER_SET;
 			}
+			closeFlag = true;
 		}
-		else if (playerPort.find(packetBundle.tcpHdr.dest) != playerPort.end()) {
-			if (players.find(playerPort[packetBundle.tcpHdr.dest]) != players.end()) {
-				// 클라이언트 -> 서버 RST 패킷
-				std::cout << "[S->C] RST" << std::endl;
-				//players[playerPort[packetBundle.tcpHdr.dest]].rstSCFlag = true;
-				//players[playerPort[packetBundle.tcpHdr.dest]].crtFlag = false;
-				//players[playerPort[packetBundle.tcpHdr.dest]].bMoveFlag = false;
-				//players[playerPort[packetBundle.tcpHdr.dest]].frameTimer = DEFAULT_TIMTER_SET;
-				players[playerPort[packetBundle.tcpHdr.dest]]->rstSCFlag = true;
-				players[playerPort[packetBundle.tcpHdr.dest]]->crtFlag = false;
-				players[playerPort[packetBundle.tcpHdr.dest]]->bMoveFlag = false;
-				players[playerPort[packetBundle.tcpHdr.dest]]->frameTimer = DEFAULT_TIMTER_SET;
-			}
-		}
-		closeFlag = true;
 	}
 
 	if (!closeFlag) {
@@ -206,7 +174,9 @@ void PlayerManager::ProcPacket(stCapturedPacket packetBundle)
 				uint16_t Y;
 				jbuff >> Y;
 				//MovePlayerClnt(ID,)
-				MovePlayerClnt(packetBundle.tcpHdr.source, { X, Y }, Direction);
+				if (player != nullptr) {
+					MovePlayerClnt(hostID, { X, Y }, Direction);
+				}
 			}
 			break;
 			case dfPACKET_CS_MOVE_STOP:
@@ -223,7 +193,9 @@ void PlayerManager::ProcPacket(stCapturedPacket packetBundle)
 				jbuff >> X;
 				uint16_t Y;
 				jbuff >> Y;
-				StopPlayerClnt(packetBundle.tcpHdr.source, { X, Y });
+				if (player != nullptr) {
+					StopPlayerClnt(hostID, { X, Y });
+				}
 			}
 			break;
 			case dfPACKET_SC_DAMAGE:
@@ -270,29 +242,41 @@ void PlayerManager::ProcPacket(stCapturedPacket packetBundle)
 		}
 	}
 
-	if (player != nullptr) {
-		WOA_Player_Unlock(player);
-	}
+	//if (player != nullptr) {
+	//	WOA_Player_Unlock(player);
+	//}
 }
 
 void PlayerManager::ProcCapture() {
 	while (procFlag) {
-		if (!capture->IsEmptyPacketQueue()) {
-			stCapturedPacket capPack = capture->GetCapturedPacket();
-		
-			//////////////////////////////////////////////
-			// ProcPacket을 스레드 풀의 작업(work)로 할당
-			//////////////////////////////////////////////
-			//thPool.Enqueue(&PlayerManager::ProcPacket, this, capPack);
-			thPool.Enqueue(&PlayerManager::ProcPacket, this, capPack); // stCapturedPacket 객체를 전달
-		}
+		//if (!capture->IsEmptyPacketQueue()) {
+		//	stCapturedPacket capPack = capture->GetCapturedPacket();
+		//
+		//	//////////////////////////////////////////////
+		//	// ProcPacket을 스레드 풀의 작업(work)로 할당
+		//	//////////////////////////////////////////////
+		//	//thPool.Enqueue(&PlayerManager::ProcPacket, this, capPack);
+		//
+		//	ProcPacket(capPack);
+		//
+		//	//thPool.Enqueue(&PlayerManager::ProcPacket, this, capPack); // stCapturedPacket 객체를 전달
+		//
+		//	//ProcPacketFront(capPack);
+		//}
+
+		stCapturedPacket capPack = capture->GetCapturedPacket();
+		ProcPacket(capPack);
 	}
 }
 
 
 void PlayerManager::FrameMove(BYTE loopMs) {
-	BYTE loopDelta = loopMs / 40;
-
+	//SetThreadPriority(GetCurrentThread(), +1);
+	BYTE loopDelta = loopMs / 20;
+	BYTE overDelta = 0;
+	double over = 0;
+	
+	timeBeginPeriod(1);
 	double start = clock();
 	while (procFlag) {
 		for (auto iter = players.begin(); iter != players.end(); /*iter++*/) {
@@ -319,110 +303,110 @@ void PlayerManager::FrameMove(BYTE loopMs) {
 					Player* object = iter->second;
 					switch (object->byDir) {
 					case dfPACKET_MOVE_DIR_LL:
-						if (object->clntPoint.X < DELTA_X * (loopDelta)) {			// 오버 프래임 로직 추가
+						if (object->clntPoint.X < DELTA_X_50FPS * (loopDelta)) {			// 오버 프래임 로직 추가
 							object->clntPoint.X = dfRANGE_MOVE_LEFT;
 							object->bMoveFlag = false;
 						}
 						else {
-							object->clntPoint.X -= DELTA_X * (loopDelta);
+							object->clntPoint.X -= DELTA_X_50FPS * (loopDelta);
 						}
 						break;
 
 					case dfPACKET_MOVE_DIR_LU:
-						if (object->clntPoint.X < DELTA_X * (loopDelta)) {
+						if (object->clntPoint.X < DELTA_X_50FPS * (loopDelta)) {
 							object->clntPoint.X = dfRANGE_MOVE_LEFT;
 							object->bMoveFlag = false;
 						}
 						else {
-							object->clntPoint.X -= DELTA_X * (loopDelta);
+							object->clntPoint.X -= DELTA_X_50FPS * (loopDelta);
 						}
-						if (object->clntPoint.Y < DELTA_Y * (loopDelta)) {
+						if (object->clntPoint.Y < DELTA_Y_50FPS * (loopDelta)) {
 							object->clntPoint.Y = dfRANGE_MOVE_TOP;
 							object->bMoveFlag = false;
 						}
 						else {
-							object->clntPoint.Y -= DELTA_Y * (loopDelta);
+							object->clntPoint.Y -= DELTA_Y_50FPS * (loopDelta);
 						}
 						break;
 
 					case dfPACKET_MOVE_DIR_UU:
-						if (object->clntPoint.Y < DELTA_Y * (loopDelta)) {
+						if (object->clntPoint.Y < DELTA_Y_50FPS * (loopDelta)) {
 							object->clntPoint.Y = dfRANGE_MOVE_TOP;
 							object->bMoveFlag = false;
 						}
 						else {
-							object->clntPoint.Y -= DELTA_Y * (loopDelta);
+							object->clntPoint.Y -= DELTA_Y_50FPS * (loopDelta);
 						}
 						break;
 
 					case dfPACKET_MOVE_DIR_RU:
-						if (object->clntPoint.X + DELTA_X * (loopDelta) > dfRANGE_MOVE_RIGHT) {
+						if (object->clntPoint.X + DELTA_X_50FPS * (loopDelta) > dfRANGE_MOVE_RIGHT) {
 							object->clntPoint.X = dfRANGE_MOVE_RIGHT;
 							object->bMoveFlag = false;
 						}
 						else {
-							object->clntPoint.X += DELTA_X * (loopDelta);
+							object->clntPoint.X += DELTA_X_50FPS * (loopDelta);
 						}
-						if (object->clntPoint.Y < DELTA_Y * (loopDelta)) {
+						if (object->clntPoint.Y < DELTA_Y_50FPS * (loopDelta)) {
 							object->clntPoint.Y = dfRANGE_MOVE_TOP;
 							object->bMoveFlag = false;
 						}
 						else {
-							object->clntPoint.Y -= DELTA_Y * (loopDelta);
+							object->clntPoint.Y -= DELTA_Y_50FPS * (loopDelta);
 						}
 						break;
 
 					case dfPACKET_MOVE_DIR_RR:
-						if (object->clntPoint.X + DELTA_X * (loopDelta) > dfRANGE_MOVE_RIGHT) {
+						if (object->clntPoint.X + DELTA_X_50FPS * (loopDelta) > dfRANGE_MOVE_RIGHT) {
 							object->clntPoint.X = dfRANGE_MOVE_RIGHT;
 							object->bMoveFlag = false;
 						}
 						else {
-							object->clntPoint.X += DELTA_X * (loopDelta);
+							object->clntPoint.X += DELTA_X_50FPS * (loopDelta);
 						}
 						break;
 
 					case dfPACKET_MOVE_DIR_RD:
-						if (object->clntPoint.X + DELTA_X * (loopDelta) > dfRANGE_MOVE_RIGHT) {
+						if (object->clntPoint.X + DELTA_X_50FPS * (loopDelta) > dfRANGE_MOVE_RIGHT) {
 							object->clntPoint.X = dfRANGE_MOVE_RIGHT;
 							object->bMoveFlag = false;
 						}
 						else {
-							object->clntPoint.X += DELTA_X * (loopDelta);
+							object->clntPoint.X += DELTA_X_50FPS * (loopDelta);
 						}
-						if (object->clntPoint.Y + DELTA_Y * (loopDelta) > dfRANGE_MOVE_BOTTOM) {
+						if (object->clntPoint.Y + DELTA_Y_50FPS * (loopDelta) > dfRANGE_MOVE_BOTTOM) {
 							object->clntPoint.Y = dfRANGE_MOVE_BOTTOM;
 							object->bMoveFlag = false;
 						}
 						else {
-							object->clntPoint.Y += DELTA_Y * (loopDelta);
+							object->clntPoint.Y += DELTA_Y_50FPS * (loopDelta);
 						}
 						break;
 
 					case dfPACKET_MOVE_DIR_DD:
-						if (object->clntPoint.Y + DELTA_Y * (loopDelta) > dfRANGE_MOVE_BOTTOM) {
+						if (object->clntPoint.Y + DELTA_Y_50FPS * (loopDelta) > dfRANGE_MOVE_BOTTOM) {
 							object->clntPoint.Y = dfRANGE_MOVE_BOTTOM;
 							object->bMoveFlag = false;
 						}
 						else {
-							object->clntPoint.Y += DELTA_Y * (loopDelta);
+							object->clntPoint.Y += DELTA_Y_50FPS * (loopDelta);
 						}
 						break;
 
 					case dfPACKET_MOVE_DIR_LD:
-						if (object->clntPoint.X < DELTA_X * (loopDelta)) {
+						if (object->clntPoint.X < DELTA_X_50FPS * (loopDelta)) {
 							object->clntPoint.X = dfRANGE_MOVE_LEFT;
 							object->bMoveFlag = false;
 						}
 						else {
-							object->clntPoint.X -= DELTA_X * (loopDelta);
+							object->clntPoint.X -= DELTA_X_50FPS * (loopDelta);
 						}
-						if (object->clntPoint.Y + DELTA_Y * (loopDelta) > dfRANGE_MOVE_BOTTOM) {
+						if (object->clntPoint.Y + DELTA_Y_50FPS * (loopDelta) > dfRANGE_MOVE_BOTTOM) {
 							object->clntPoint.Y = dfRANGE_MOVE_BOTTOM;
 							object->bMoveFlag = false;
 						}
 						else {
-							object->clntPoint.Y += DELTA_Y * (loopDelta);
+							object->clntPoint.Y += DELTA_Y_50FPS * (loopDelta);
 						}
 						break;
 					default:
@@ -432,7 +416,7 @@ void PlayerManager::FrameMove(BYTE loopMs) {
 			}
 
 			if (delFlag) {
-				iter = players.erase(iter);
+				iter = players.erase(iter->first);
 			}
 			else {
 				iter++;
@@ -449,4 +433,5 @@ void PlayerManager::FrameMove(BYTE loopMs) {
 		}
 		start = clock();
 	}
+	timeEndPeriod(1);
 }

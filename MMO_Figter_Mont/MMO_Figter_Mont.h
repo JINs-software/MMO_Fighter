@@ -15,15 +15,15 @@
 // My Global Variable
 //////////////////////////
 // Draw
-//HDC g_hMemDC;
-//HBITMAP g_hMemDC_Bitmap;
-//HBITMAP g_hMemDC_BitmapOld;
-//RECT g_MemDC_Rect;
+HDC g_hMemDC;
+HBITMAP g_hMemDC_Bitmap;
+HBITMAP g_hMemDC_BitmapOld;
+RECT g_MemDC_Rect;
 
-HDC grid_hMemDC;
-HBITMAP grid_hMemDC_Bitmap;
-HBITMAP grid_hMemDC_BitmapOld;
-RECT grid_MemDC_Rect;
+//HDC grid_hMemDC;
+//HBITMAP grid_hMemDC_Bitmap;
+//HBITMAP grid_hMemDC_BitmapOld;
+//RECT grid_MemDC_Rect;
 
 
 //HPEN pen;
@@ -44,6 +44,8 @@ unsigned short listenPort = 20000;
 PlayerManager pMgr;
 
 // Timer
-const unsigned int timer40ms = 1;
-const unsigned int timer120ms = 2;
+//const unsigned int timer40ms = 1;
+//const unsigned int timer120ms = 2;
+const unsigned int timerID = 3;
+const unsigned int timerMs = 40;
 const BYTE WaitMS = 40;

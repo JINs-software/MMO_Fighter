@@ -23,6 +23,51 @@ public:
 	int cellY;
 	std::vector<std::vector<Cell>> cells;
 
+	HBRUSH hBrushRed;// = CreateSolidBrush(RGB(255, 0, 0));
+	HBRUSH hBrushOrange;// = CreateSolidBrush(RGB(0xFF, 0x7F, 0));
+	HBRUSH hBrushPurple;// = CreateSolidBrush(RGB(0x8B, 0x0, 0xFF));
+	HBRUSH hBrushBlue;// = CreateSolidBrush(RGB(0, 0, 255));
+	HBRUSH hBrushGray;// = CreateSolidBrush(RGB(128, 128, 128));
+	HBRUSH hBrushBlack;// = CreateSolidBrush(RGB(0x0A, 0x0A, 0x0A));
+
+	HBRUSH hBrushGreen0;// = CreateSolidBrush(RGB(0, 128, 0));
+	HBRUSH hBrushGreen1;// = CreateSolidBrush(RGB(50, 150, 50));
+	HBRUSH hBrushGreen2;// = CreateSolidBrush(RGB(100, 180, 100));
+	HBRUSH hBrushGreen3;// = CreateSolidBrush(RGB(150, 210, 150));
+	HBRUSH hBrushGreen4;// = CreateSolidBrush(RGB(200, 240, 200));
+	HBRUSH hBrushGreen5;// = CreateSolidBrush(RGB(250, 255, 250));
+
+	Grid() {
+		hBrushRed = CreateSolidBrush(RGB(255, 0, 0));
+		hBrushOrange = CreateSolidBrush(RGB(0xFF, 0x7F, 0));
+		hBrushPurple = CreateSolidBrush(RGB(0x8B, 0x0, 0xFF));
+		hBrushBlue = CreateSolidBrush(RGB(0, 0, 255));
+		hBrushGray = CreateSolidBrush(RGB(128, 128, 128));
+		hBrushBlack = CreateSolidBrush(RGB(0x0A, 0x0A, 0x0A));
+
+		hBrushGreen0 = CreateSolidBrush(RGB(0, 128, 0));
+		hBrushGreen1 = CreateSolidBrush(RGB(50, 150, 50));
+		hBrushGreen2 = CreateSolidBrush(RGB(100, 180, 100));
+		hBrushGreen3 = CreateSolidBrush(RGB(150, 210, 150));
+		hBrushGreen4 = CreateSolidBrush(RGB(200, 240, 200));
+		hBrushGreen5 = CreateSolidBrush(RGB(250, 255, 250));
+	}
+	~Grid() {
+		DeleteObject(hBrushRed);
+		DeleteObject(hBrushOrange);
+		DeleteObject(hBrushPurple);
+		DeleteObject(hBrushBlue);
+		DeleteObject(hBrushGray);
+		DeleteObject(hBrushBlack);
+
+		DeleteObject(hBrushGreen0);
+		DeleteObject(hBrushGreen1);
+		DeleteObject(hBrushGreen2);
+		DeleteObject(hBrushGreen3);
+		DeleteObject(hBrushGreen4);
+		DeleteObject(hBrushGreen5);
+	}
+
 	void SetGridCell(int size, int cY, int cX) {
 		cellSize = size;
 		cellX = cX;
@@ -37,7 +82,7 @@ public:
 		}
 	}
 
-	void SelectPlayer(int winX, int winY, std::unordered_map<unsigned int, Player*>& players) {
+	void SelectPlayer(int winX, int winY, ThreadSafeUnorderedMap<unsigned int, Player*>& players) {
 		//winX -= offsetX;
 		//winX /= ((double)cellSize / 64);
 		//winY -= offsetY;
@@ -102,21 +147,7 @@ public:
 		//SelectObject(hdc, oldBrush);
 		//DeleteObject(pen);
 	}
-	void DrawPlayer(HDC hdc, int windowWidth, int windowHeight, std::unordered_map<unsigned int, Player*>* players = nullptr, std::mutex* playersMtx = nullptr) {
-		HBRUSH hBrushRed = CreateSolidBrush(RGB(255, 0, 0));
-		HBRUSH hBrushOrange = CreateSolidBrush(RGB(0xFF, 0x7F, 0));
-		HBRUSH hBrushPurple = CreateSolidBrush(RGB(0x8B, 0x0, 0xFF));
-		HBRUSH hBrushBlue = CreateSolidBrush(RGB(0, 0, 255));
-		HBRUSH hBrushGray = CreateSolidBrush(RGB(128, 128, 128));
-		HBRUSH hBrushBlack = CreateSolidBrush(RGB(0x0A, 0x0A, 0x0A));
-
-		HBRUSH hBrushGreen0 = CreateSolidBrush(RGB(0, 128, 0));
-		HBRUSH hBrushGreen1 = CreateSolidBrush(RGB(50, 150, 50));
-		HBRUSH hBrushGreen2 = CreateSolidBrush(RGB(100, 180, 100));
-		HBRUSH hBrushGreen3 = CreateSolidBrush(RGB(150, 210, 150));
-		HBRUSH hBrushGreen4 = CreateSolidBrush(RGB(200, 240, 200));
-		HBRUSH hBrushGreen5 = CreateSolidBrush(RGB(250, 255, 250));
-
+	void DrawPlayer(HDC hdc, int windowWidth, int windowHeight, ThreadSafeUnorderedMap<unsigned int, Player*>* players = nullptr) {//, std::mutex* playersMtx = nullptr) {
 		HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, hBrushGreen0);
 		if (players != nullptr) {
 			//playersMtx->lock();
@@ -185,20 +216,6 @@ public:
 			//playersMtx->unlock();
 		}
 		SelectObject(hdc, oldBrush);
-
-		DeleteObject(hBrushRed);
-		DeleteObject(hBrushOrange);
-		DeleteObject(hBrushPurple);
-		DeleteObject(hBrushBlue);
-		DeleteObject(hBrushGray);
-		DeleteObject(hBrushBlack);
-
-		DeleteObject(hBrushGreen0);
-		DeleteObject(hBrushGreen1);
-		DeleteObject(hBrushGreen2);
-		DeleteObject(hBrushGreen3);
-		DeleteObject(hBrushGreen4);
-		DeleteObject(hBrushGreen5);
 	}
 
 	void MoveLeft() {
