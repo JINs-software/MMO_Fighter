@@ -35,14 +35,12 @@ ArpSpoofer servCapture;
 
 // MMO_SERVER
 std::string serverIP;// = "172.30.1.20";
-unsigned short listenPort = 20000;
+unsigned short listenPort;// = 20000;
 
 // Player
-PlayerManager pMgr;
+PlayerManager playerManager;
 
 // Timer
-//const unsigned int timer40ms = 1;
-//const unsigned int timer120ms = 2;
 const unsigned int timerID = 3;
 const unsigned int timerMs = 40;
 const BYTE WaitMS = 40;

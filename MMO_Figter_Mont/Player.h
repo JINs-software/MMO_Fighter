@@ -79,23 +79,12 @@ void WOA_Player_Unlock(Player* pp);
 struct PlayerManager {
 	ArpSpoofer* capture;
 	bool procFlag = false;
+	bool loopBackMode = false;
 	JiniPool playerPool;	// player 객체를 위한 풀
-
-	//std::unordered_map<unsigned int, Player*> players;
 	ThreadSafeUnorderedMap<unsigned int, Player*> players;
-	//std::mutex playersMtx;
-
-	//std::unordered_map<unsigned short, unsigned int> playerPort;
 	ThreadSafeUnorderedMap<unsigned short, unsigned> playerPort;
-	//std::mutex portMtx;
 
 	uint8_t serverIP[4];
-	//JBuffer* buff;
-	//PlayerManager(uint8_t* ip) {
-	//	memcpy(serverIP, ip, sizeof(uint8_t) * 4);
-	//	buff = new JBuffer(BUFF_SIZE);
-	//}
-
 	//ThreadPool thPool;
 
 	PlayerManager() : playerPool(sizeof(Player), MAXIM_PLAYER_NUM)/*, thPool(5)*/ {}
@@ -103,7 +92,10 @@ struct PlayerManager {
 	void SetCapture(ArpSpoofer* capture_) {
 		capture = capture_;
 	}
-	void SetServerIP(const std::string& serverIPString) {
+	void SetServerAddress(const std::string& serverIPString, unsigned short port) {
+		if (serverIPString.compare("127.0.0.1") == 0) {
+			loopBackMode = true;
+		}
 		std::istringstream ss(serverIPString);
 		std::string part;
 		int i = 0;

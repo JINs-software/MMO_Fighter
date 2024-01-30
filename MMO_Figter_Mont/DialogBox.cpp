@@ -1,9 +1,12 @@
 #include "DialogBox.h"
 #include "resource.h"
+#include <string>
 
 bool MyDialogClass::progressFlag = false;
 bool MyDialogClass::loopBackMode = false;
 TCHAR MyDialogClass::ipAddress[16] = { 0 };
+TCHAR MyDialogClass::port[6] = { 0 };
+unsigned short MyDialogClass::usPort = 0;
 
 INT_PTR CALLBACK MyDialogClass::DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     HFONT hCustomFont;
@@ -33,12 +36,16 @@ INT_PTR CALLBACK MyDialogClass::DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wPara
         // 에디트 컨트롤에 이탤릭 폰트를 설정합니다.
         SendDlgItemMessage(hwndDlg, IDC_EDIT1, WM_SETFONT, (WPARAM)hCustomFont, TRUE);
         SetDlgItemText(hwndDlg, IDC_EDIT1, L"ex) 192.168.30.150");
+
+        SendDlgItemMessage(hwndDlg, IDC_EDIT2, WM_SETFONT, (WPARAM)hCustomFont, TRUE);
+        SetDlgItemText(hwndDlg, IDC_EDIT2, L"ex) 20000");
     }
         return TRUE; // 포커스를 컨트롤에 설정하지 않음
     case WM_DESTROY:
     {
         if (hCustomFont != NULL) {
             DeleteObject(hCustomFont);
+            DeleteObject(hPrevFont);
         }
     }
     break;
@@ -50,6 +57,13 @@ INT_PTR CALLBACK MyDialogClass::DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wPara
             SetDlgItemText(hwndDlg, IDC_EDIT1, L"");
             break;
         }
+        if (LOWORD(wParam) == IDC_EDIT2 && HIWORD(wParam) == EN_SETFOCUS)
+        {
+            // 에디트 컨트롤이 포커스를 받았을 때, 텍스트를 삭제합니다.
+            SendDlgItemMessage(hwndDlg, IDC_EDIT2, WM_SETFONT, (WPARAM)hPrevFont, TRUE);
+            SetDlgItemText(hwndDlg, IDC_EDIT2, L"");
+            break;
+        }
 
         int wmId = LOWORD(wParam);
         switch (wmId) {
@@ -57,6 +71,10 @@ INT_PTR CALLBACK MyDialogClass::DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wPara
             MyDialogClass::progressFlag = true;
             if (!MyDialogClass::loopBackMode) {
                 GetDlgItemText(hwndDlg, IDC_EDIT1, MyDialogClass::ipAddress, 16);
+                GetDlgItemText(hwndDlg, IDC_EDIT2, MyDialogClass::port, 6);
+                
+                std::wstring str(MyDialogClass::port);
+                MyDialogClass::usPort = static_cast<unsigned short>(std::stoi(str));
             }
             EndDialog(hwndDlg, LOWORD(wParam));
             return true;
@@ -75,9 +93,9 @@ INT_PTR CALLBACK MyDialogClass::DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wPara
             else {
                 MyDialogClass::loopBackMode = false;
                 // 체크가 해제된 경우, 에디트 창 활성화
-                //SetDlgItemText(hwndDlg, IDC_EDIT1, L"");
-                SendDlgItemMessage(hwndDlg, IDC_EDIT1, WM_SETFONT, (WPARAM)hCustomFont, TRUE);
-                SetDlgItemText(hwndDlg, IDC_EDIT1, L"ex) 192.168.30.150");
+                SetDlgItemText(hwndDlg, IDC_EDIT1, L"");
+                //SendDlgItemMessage(hwndDlg, IDC_EDIT1, WM_SETFONT, (WPARAM)hCustomFont, TRUE);
+                //SetDlgItemText(hwndDlg, IDC_EDIT1, L"ex) 192.168.30.150");
                 EnableWindow(GetDlgItem(hwndDlg, IDC_EDIT1), TRUE);
             }
             return TRUE;

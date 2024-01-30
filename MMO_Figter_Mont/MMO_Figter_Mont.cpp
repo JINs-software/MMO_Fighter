@@ -44,6 +44,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         return 0;
     }
     else {
+        listenPort = MyDialogClass::usPort;
 #ifndef UNICODE        
         if (MyDialogClass::loopBackMode) {
             serverIP = "127.0.0.1";
@@ -182,10 +183,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
        }
    }
    servCapture.RunServerCapture(serverIP, listenPort);
-   pMgr.SetCapture(&servCapture);
-   pMgr.SetServerIP(serverIP);
-   pMgr.RunProcCapture();
-   pMgr.RunProcFrameMove(WaitMS);
+   playerManager.SetCapture(&servCapture);
+   playerManager.SetServerAddress(serverIP, listenPort);
+   playerManager.RunProcCapture();
+   playerManager.RunProcFrameMove(WaitMS);
 
    // 타이머
    //SetTimer(hWnd, timer120ms, 120, NULL);
@@ -278,7 +279,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             // 메모리 DC 클리어
             PatBlt(g_hMemDC, 0, 0, g_MemDC_Rect.right, g_MemDC_Rect.bottom, WHITENESS);
             gGrid.DrawGrid(g_hMemDC, g_MemDC_Rect.right, g_MemDC_Rect.bottom);
-            gGrid.DrawPlayer(g_hMemDC, g_MemDC_Rect.right, g_MemDC_Rect.bottom, &pMgr.players);// , & pMgr.playersMtx);
+            gGrid.DrawPlayer(g_hMemDC, g_MemDC_Rect.right, g_MemDC_Rect.bottom, &playerManager.players);// , & pMgr.playersMtx);
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
             BitBlt(hdc, 0, 0, g_MemDC_Rect.right, g_MemDC_Rect.bottom, g_hMemDC, 0, 0, SRCCOPY);
@@ -290,7 +291,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         int x = LOWORD(lParam);
         int y = HIWORD(lParam);
-        gGrid.SelectPlayer(x, y, pMgr.players);
+        gGrid.SelectPlayer(x, y, playerManager.players);
     }
     break;
     case WM_MOUSEWHEEL:
@@ -371,7 +372,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     break;
     case WM_DESTROY:
         servCapture.stopCapture();
-        pMgr.StopCapture();
+        playerManager.StopCapture();
 
         SelectObject(g_hMemDC, g_hMemDC_BitmapOld);
         DeleteObject(g_hMemDC);
