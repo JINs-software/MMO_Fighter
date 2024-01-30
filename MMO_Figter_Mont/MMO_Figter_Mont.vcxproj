@@ -134,6 +134,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="DialogBox.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Grid.h" />
     <ClInclude Include="MMO_Figter_Mont.h" />
@@ -144,6 +145,7 @@
     <ClInclude Include="ThreadSafeUMap.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DialogBox.cpp" />
     <ClCompile Include="Grid.cpp" />
     <ClCompile Include="MMO_Figter_Mont.cpp" />
     <ClCompile Include="Player.cpp" />

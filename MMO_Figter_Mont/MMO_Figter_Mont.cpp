@@ -3,6 +3,7 @@
 
 #include "framework.h"
 #include "MMO_Figter_Mont.h"
+#include "DialogBox.h"
 
 #define MAX_LOADSTRING 100
 
@@ -16,34 +17,6 @@ ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
-
-// Window Draw 함수
-void UpdateGridBackground(HWND hWnd) {
-    //// 메모리 DC 클리어
-    //PatBlt(grid_hMemDC, 0, 0, g_MemDC_Rect.right, g_MemDC_Rect.bottom, WHITENESS);
-    //gGrid.DrawGrid(grid_hMemDC, g_MemDC_Rect.right, g_MemDC_Rect.bottom);// , & pMgr.players, & pMgr.playersMtx);
-}
-void WindowPaintPlayer(HWND hWnd, HDC hdc) {
-    /*
-    // 메모리 DC 클리어
-    PatBlt(g_hMemDC, 0, 0, g_MemDC_Rect.right, g_MemDC_Rect.bottom, WHITENESS);
-    //gGrid.DrawGrid(g_hMemDC, g_MemDC_Rect.right, g_MemDC_Rect.bottom, &pMgr.players, &pMgr.playersMtx);
-    gGrid.DrawPlayer(g_hMemDC, g_MemDC_Rect.right, g_MemDC_Rect.bottom, &pMgr.players, &pMgr.playersMtx);
-    */
-
-    //PatBlt(g_hMemDC, 0, 0, g_MemDC_Rect.right, g_MemDC_Rect.bottom, WHITENESS);
-    //gGrid.DrawGrid(g_hMemDC, g_MemDC_Rect.right, g_MemDC_Rect.bottom);// , & pMgr.players, & pMgr.playersMtx);
-
-    //UpdateGridBackground(hWnd);
-    //PAINTSTRUCT ps;
-    //HDC hdc = BeginPaint(hWnd, &ps);
-    //HDC hdc = GetWindowDC(hWnd);
-    //BitBlt(hdc, 0, 0, g_MemDC_Rect.right, g_MemDC_Rect.bottom, grid_hMemDC, 0, 0, SRCCOPY);
-    //BitBlt(hdc, 0, 0, g_MemDC_Rect.right, g_MemDC_Rect.bottom, g_hMemDC, 0, 0, SRCCOPY);
-
-    //EndPaint(hWnd, &ps);
-    //ReleaseDC(hWnd, hdc);
-}
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -59,28 +32,64 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_MMOFIGTERMONT, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
-
-    // 애플리케이션 초기화를 수행합니다:
-    if (!InitInstance (hInstance, nCmdShow))
-    {
+    
+    // 대화 상자 표시
+    int result = DialogBox(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), NULL, MyDialogClass::DialogProc);
+    if (result == IDCANCEL) {
+        // 사용자가 취소 버튼을 눌렀을 때 처리
         return FALSE;
     }
 
-    HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MMOFIGTERMONT));
-
-    MSG msg;
-
-    // 기본 메시지 루프입니다:
-    while (GetMessage(&msg, nullptr, 0, 0))
-    {
-        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
-        {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
+    if (!MyDialogClass::progressFlag) {
+        return 0;
     }
+    else {
+#ifndef UNICODE        
+        if (MyDialogClass::loopBackMode) {
+            serverIP = "127.0.0.1";
+        }
+        else {
+            serverIP = MyDialogClass::ipAddress;
+        }
+#else
+        if (MyDialogClass::loopBackMode) {
+            serverIP = "127.0.0.1";
+        }
+        else {
+            std::wstring wStr = MyDialogClass::ipAddress;
+            serverIP = std::string(wStr.begin(), wStr.end());
+        }
+#endif
 
-    return (int) msg.wParam;
+        // Open Console
+        //AllocConsole();
+        //freopen("CONOUT$", "wt", stdout);
+
+        // 애플리케이션 초기화를 수행합니다:
+        if (!InitInstance(hInstance, nCmdShow))
+        {
+            //FreeConsole();
+            return FALSE;
+        }
+
+        //FreeConsole();
+
+        HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MMOFIGTERMONT));
+
+        MSG msg;
+
+        // 기본 메시지 루프입니다:
+        while (GetMessage(&msg, nullptr, 0, 0))
+        {
+            if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+            {
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+            }
+        }
+
+        return (int)msg.wParam;
+    }
 }
 
 
@@ -127,20 +136,19 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
-
    if (!hWnd)
    {
       return FALSE;
    }
 
-   // Open Console
-   AllocConsole();
-   freopen("CONOUT$", "wt", stdout);
+   ///////////////////////////
+   // 초기값 설정 윈도우
+   ///////////////////////////
+   hMainWnd = hWnd;
 
    /////////////////////
    // My Init
    /////////////////////
-   
    // Draw
    HDC hdc = GetDC(hWnd);
    GetClientRect(hWnd, &g_MemDC_Rect);
@@ -161,7 +169,18 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    //UpdateGridBackground(hWnd);
 
    // Capture
-   servCapture.Init(serverIP);// , true);
+   if (MyDialogClass::loopBackMode) {
+       if (!servCapture.Init(serverIP, true)) {
+           MessageBox(NULL, L"루프백 설정 오류", L"패킷 캡처 설정 오류", MB_OK | MB_ICONINFORMATION);
+           return FALSE;
+       }
+   }
+   else {
+       if (!servCapture.Init(serverIP)) {
+           MessageBox(NULL, L"모니터링 노드와 연결되어 있지 않은 서버입니다.", L"패킷 캡처 설정 오류", MB_OK | MB_ICONINFORMATION);
+           return FALSE;
+       }
+   }
    servCapture.RunServerCapture(serverIP, listenPort);
    pMgr.SetCapture(&servCapture);
    pMgr.SetServerIP(serverIP);
@@ -207,10 +226,32 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case IDM_EXIT:
                 DestroyWindow(hWnd);
                 break;
+            //case INIT_BUTTON:
+            //{
+            //    // 초기값 입력 창 열기
+            //    //CreateWindow(L"InputDialogClass", L"Input Dialog", WS_OVERLAPPEDWINDOW,
+            //    //    CW_USEDEFAULT, CW_USEDEFAULT, 300, 200, hWnd, NULL, hInst, NULL);
+            //
+            //    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+            //    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+            //    int windowWidth = 300; // 윈도우의 폭
+            //    int windowHeight = 200; // 윈도우의 높이
+            //
+            //    CreateWindow(L"InputDialogClass", L"Input Dialog", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+            //        (screenWidth - windowWidth) / 2, (screenHeight - windowHeight) / 2,
+            //        windowWidth, windowHeight, hWnd, NULL, hInst, NULL);
+            //}
+            //    break;
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
             }
         }
+        break;
+    case WM_USER + 1:
+        // 사용자 정의 메시지 처리 (초기값 전달)
+        MessageBox(hWnd, (LPWSTR)lParam, L"Input Value", MB_OK);
+        // 이후의 동작 수행
+        // ...
         break;
     case WM_TIMER:
     {

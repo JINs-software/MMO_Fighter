@@ -96,9 +96,9 @@ struct PlayerManager {
 	//	buff = new JBuffer(BUFF_SIZE);
 	//}
 
-	ThreadPool thPool;
+	//ThreadPool thPool;
 
-	PlayerManager() : playerPool(sizeof(Player), MAXIM_PLAYER_NUM), thPool(5) {}
+	PlayerManager() : playerPool(sizeof(Player), MAXIM_PLAYER_NUM)/*, thPool(5)*/ {}
 
 	void SetCapture(ArpSpoofer* capture_) {
 		capture = capture_;

@@ -14,21 +14,18 @@
 //////////////////////////
 // My Global Variable
 //////////////////////////
+
+// 초기값 입력 창
+HWND hMainWnd;
+HWND hInputDialog;
+bool initFlag = false;
+
+
 // Draw
 HDC g_hMemDC;
 HBITMAP g_hMemDC_Bitmap;
 HBITMAP g_hMemDC_BitmapOld;
 RECT g_MemDC_Rect;
-
-//HDC grid_hMemDC;
-//HBITMAP grid_hMemDC_Bitmap;
-//HBITMAP grid_hMemDC_BitmapOld;
-//RECT grid_MemDC_Rect;
-
-
-//HPEN pen;
-//HBRUSH hBrushServ;
-//HBRUSH hBrushClnt;
 
 // Grid
 Grid gGrid;
@@ -37,7 +34,7 @@ Grid gGrid;
 ArpSpoofer servCapture;
 
 // MMO_SERVER
-std::string serverIP = "172.30.1.20";
+std::string serverIP;// = "172.30.1.20";
 unsigned short listenPort = 20000;
 
 // Player
