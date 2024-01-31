@@ -85,6 +85,7 @@ struct PlayerManager {
 	ThreadSafeUnorderedMap<unsigned short, unsigned> playerPort;
 
 	uint8_t serverIP[4];
+	uint16_t serverPort;
 	//ThreadPool thPool;
 
 	PlayerManager() : playerPool(sizeof(Player), MAXIM_PLAYER_NUM)/*, thPool(5)*/ {}
@@ -103,6 +104,8 @@ struct PlayerManager {
 			serverIP[i] = static_cast<uint8_t>(std::stoi(part));
 			i++;
 		}
+		
+		serverPort = port;
 	}
 
 	void ProcPacket(stCapturedPacket packetBundle);

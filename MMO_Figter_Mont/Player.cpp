@@ -30,6 +30,7 @@ void PlayerManager::ProcPacket(stCapturedPacket packetBundle)
 
 	// 서버의 IP 주소가 루프-백 주소가 아니라면, 서버 IP 일치 여부로 S->C인지 C->S인지 식별
 	if (!loopBackMode) {
+		// 패킷 source IP == 서버 IP
 		if (memcmp(packetBundle.ipHdr.srcIP, serverIP, sizeof(serverIP)) == 0) {
 			// S->C
 			StoC = true;
@@ -45,8 +46,10 @@ void PlayerManager::ProcPacket(stCapturedPacket packetBundle)
 				}
 			}
 		}
+		// 패킷 dest IP == 서버 IP
 		else if (memcmp(packetBundle.ipHdr.destIP, serverIP, sizeof(serverIP)) == 0) {
 			// C->S
+			StoC = false;
 			if (playerPort.find(packetBundle.tcpHdr.source, hostID)) {
 				port = packetBundle.tcpHdr.source;
 			}
@@ -59,13 +62,40 @@ void PlayerManager::ProcPacket(stCapturedPacket packetBundle)
 				}
 			}
 		}
-		else {
-			// Create 메시지이기에 등록된 port가 없을 수 있다.
+	}
+	else {
+		if (htons(serverPort) == packetBundle.tcpHdr.source) {
+			StoC = true;
+			if (playerPort.find(packetBundle.tcpHdr.dest, hostID)) {
+				port = packetBundle.tcpHdr.dest;
+			}
+			if (port != 0) {
+				if (players.find(hostID, player)) {
+					if (player->hostID != hostID) {
+						std::cout << "player->hostID != hostID !" << std::endl;
+						assert(false);
+					}
+				}
+			}
 		}
-		// CreateMsg 전이기에 등록된 포트가 없을 수 있다. 이러한 경우 그냥 플레이어에 대한 개별 락 없이 CreateMsg를 처리하도록 유도한다.
-		// 만약 플레이어 정보가 있다면 락을 건다.
+		else if (htons(serverPort) == packetBundle.tcpHdr.dest) {
+			StoC = false;
+			if (playerPort.find(packetBundle.tcpHdr.source, hostID)) {
+				port = packetBundle.tcpHdr.source;
+			}
+			if (port != 0) {
+				if (players.find(hostID, player)) {
+					if (player->hostID != hostID) {
+						std::cout << "player->hostID != hostID !" << std::endl;
+						assert(false);
+					}
+				}
+			}
+		}
 	}
 
+	// CreateMsg 전이기에 등록된 포트가 없을 수 있다. 이러한 경우 그냥 플레이어에 대한 개별 락 없이 CreateMsg를 처리하도록 유도한다.
+	// 만약 플레이어 정보가 있다면 락을 건다.
 	bool closeFlag = false;
 	if (player != nullptr) {
 		//WOA_Player_Lock(player);

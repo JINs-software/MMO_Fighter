@@ -8,31 +8,78 @@ TCHAR MyDialogClass::ipAddress[16] = { 0 };
 TCHAR MyDialogClass::port[6] = { 0 };
 unsigned short MyDialogClass::usPort = 0;
 
+HFONT hNormalFont = CreateFont(
+    -12,                    // 폰트 높이
+    0,                      // 문자의 폭 (기본값)
+    0,                      // 텍스트의 기울기 각도
+    0,                      // 텍스트의 기울기 각도
+    FW_NORMAL,              // 폰트의 굵기
+    FALSE,                   // 이탤릭체 사용 여부
+    FALSE,                  // 밑줄 사용 여부
+    FALSE,                  // 취소선 사용 여부
+    DEFAULT_CHARSET,        // 문자 집합
+    OUT_OUTLINE_PRECIS,     // 출력 정밀도
+    CLIP_DEFAULT_PRECIS,    // 클리핑 정밀도
+    CLEARTYPE_QUALITY,      // 출력 품질
+    DEFAULT_PITCH | FF_ROMAN,  // 기본 글꼴 및 글꼴 패밀리
+    L"Arial"                // 폰트 이름
+);
+HFONT hCustomFont = CreateFont(
+    -12,                    // 폰트 높이
+    0,                      // 문자의 폭 (기본값)
+    0,                      // 텍스트의 기울기 각도
+    0,                      // 텍스트의 기울기 각도
+    FW_THIN,              // 폰트의 굵기
+    TRUE,                   // 이탤릭체 사용 여부
+    FALSE,                  // 밑줄 사용 여부
+    FALSE,                  // 취소선 사용 여부
+    DEFAULT_CHARSET,        // 문자 집합
+    OUT_OUTLINE_PRECIS,     // 출력 정밀도
+    CLIP_DEFAULT_PRECIS,    // 클리핑 정밀도
+    CLEARTYPE_QUALITY,      // 출력 품질
+    DEFAULT_PITCH | FF_ROMAN,  // 기본 글꼴 및 글꼴 패밀리
+    L"Arial"                // 폰트 이름
+);
+
 INT_PTR CALLBACK MyDialogClass::DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-    HFONT hCustomFont;
-    HFONT hPrevFont;
     switch (uMsg) {
         // 메시지 처리
     case WM_INITDIALOG:
     {
         MyDialogClass::loopBackMode = false;
-        hPrevFont = (HFONT)SendDlgItemMessage(hwndDlg, IDC_EDIT1, WM_GETFONT, 0, 0);
-        hCustomFont = CreateFont(
-            -12,                    // 폰트 높이
-            0,                      // 문자의 폭 (기본값)
-            0,                      // 텍스트의 기울기 각도
-            0,                      // 텍스트의 기울기 각도
-            FW_THIN,              // 폰트의 굵기
-            TRUE,                   // 이탤릭체 사용 여부
-            FALSE,                  // 밑줄 사용 여부
-            FALSE,                  // 취소선 사용 여부
-            DEFAULT_CHARSET,        // 문자 집합
-            OUT_OUTLINE_PRECIS,     // 출력 정밀도
-            CLIP_DEFAULT_PRECIS,    // 클리핑 정밀도
-            CLEARTYPE_QUALITY,      // 출력 품질
-            DEFAULT_PITCH | FF_ROMAN,  // 기본 글꼴 및 글꼴 패밀리
-            L"Arial"                // 폰트 이름
-        );
+        //hPrevFont = (HFONT)SendDlgItemMessage(hwndDlg, IDC_EDIT1, WM_GETFONT, 0, 0);
+        //hNormalFont = CreateFont(
+        //    -12,                    // 폰트 높이
+        //    0,                      // 문자의 폭 (기본값)
+        //    0,                      // 텍스트의 기울기 각도
+        //    0,                      // 텍스트의 기울기 각도
+        //    FW_NORMAL,              // 폰트의 굵기
+        //    FALSE,                   // 이탤릭체 사용 여부
+        //    FALSE,                  // 밑줄 사용 여부
+        //    FALSE,                  // 취소선 사용 여부
+        //    DEFAULT_CHARSET,        // 문자 집합
+        //    OUT_OUTLINE_PRECIS,     // 출력 정밀도
+        //    CLIP_DEFAULT_PRECIS,    // 클리핑 정밀도
+        //    CLEARTYPE_QUALITY,      // 출력 품질
+        //    DEFAULT_PITCH | FF_ROMAN,  // 기본 글꼴 및 글꼴 패밀리
+        //    L"Arial"                // 폰트 이름
+        //);
+        //hCustomFont = CreateFont(
+        //    -12,                    // 폰트 높이
+        //    0,                      // 문자의 폭 (기본값)
+        //    0,                      // 텍스트의 기울기 각도
+        //    0,                      // 텍스트의 기울기 각도
+        //    FW_THIN,              // 폰트의 굵기
+        //    TRUE,                   // 이탤릭체 사용 여부
+        //    FALSE,                  // 밑줄 사용 여부
+        //    FALSE,                  // 취소선 사용 여부
+        //    DEFAULT_CHARSET,        // 문자 집합
+        //    OUT_OUTLINE_PRECIS,     // 출력 정밀도
+        //    CLIP_DEFAULT_PRECIS,    // 클리핑 정밀도
+        //    CLEARTYPE_QUALITY,      // 출력 품질
+        //    DEFAULT_PITCH | FF_ROMAN,  // 기본 글꼴 및 글꼴 패밀리
+        //    L"Arial"                // 폰트 이름
+        //);
         // 에디트 컨트롤에 이탤릭 폰트를 설정합니다.
         SendDlgItemMessage(hwndDlg, IDC_EDIT1, WM_SETFONT, (WPARAM)hCustomFont, TRUE);
         SetDlgItemText(hwndDlg, IDC_EDIT1, L"ex) 192.168.30.150");
@@ -45,7 +92,9 @@ INT_PTR CALLBACK MyDialogClass::DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wPara
     {
         if (hCustomFont != NULL) {
             DeleteObject(hCustomFont);
-            DeleteObject(hPrevFont);
+        }
+        if (hNormalFont != NULL) {
+            DeleteObject(hNormalFont);
         }
     }
     break;
@@ -53,14 +102,14 @@ INT_PTR CALLBACK MyDialogClass::DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wPara
         if (LOWORD(wParam) == IDC_EDIT1 && HIWORD(wParam) == EN_SETFOCUS)
         {
             // 에디트 컨트롤이 포커스를 받았을 때, 텍스트를 삭제합니다.
-            SendDlgItemMessage(hwndDlg, IDC_EDIT1, WM_SETFONT, (WPARAM)hPrevFont, TRUE);
+            SendDlgItemMessage(hwndDlg, IDC_EDIT1, WM_SETFONT, (WPARAM)hNormalFont, TRUE);
             SetDlgItemText(hwndDlg, IDC_EDIT1, L"");
             break;
         }
         if (LOWORD(wParam) == IDC_EDIT2 && HIWORD(wParam) == EN_SETFOCUS)
         {
             // 에디트 컨트롤이 포커스를 받았을 때, 텍스트를 삭제합니다.
-            SendDlgItemMessage(hwndDlg, IDC_EDIT2, WM_SETFONT, (WPARAM)hPrevFont, TRUE);
+            SendDlgItemMessage(hwndDlg, IDC_EDIT2, WM_SETFONT, (WPARAM)hNormalFont, TRUE);
             SetDlgItemText(hwndDlg, IDC_EDIT2, L"");
             break;
         }
@@ -68,15 +117,16 @@ INT_PTR CALLBACK MyDialogClass::DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wPara
         int wmId = LOWORD(wParam);
         switch (wmId) {
         case IDOK:
+        {
             MyDialogClass::progressFlag = true;
             if (!MyDialogClass::loopBackMode) {
                 GetDlgItemText(hwndDlg, IDC_EDIT1, MyDialogClass::ipAddress, 16);
-                GetDlgItemText(hwndDlg, IDC_EDIT2, MyDialogClass::port, 6);
-                
-                std::wstring str(MyDialogClass::port);
-                MyDialogClass::usPort = static_cast<unsigned short>(std::stoi(str));
             }
+            GetDlgItemText(hwndDlg, IDC_EDIT2, MyDialogClass::port, 6);
+            std::wstring str(MyDialogClass::port);
+            MyDialogClass::usPort = static_cast<unsigned short>(std::stoi(str));
             EndDialog(hwndDlg, LOWORD(wParam));
+        }
             return true;
         case IDCANCEL:
             MyDialogClass::progressFlag = false;

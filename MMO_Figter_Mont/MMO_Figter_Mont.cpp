@@ -63,8 +63,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 #endif
 
         // Open Console
-        //AllocConsole();
-        //freopen("CONOUT$", "wt", stdout);
+        AllocConsole();
+        freopen("CONOUT$", "wt", stdout);
 
         // 애플리케이션 초기화를 수행합니다:
         if (!InitInstance(hInstance, nCmdShow))
@@ -182,7 +182,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
            return FALSE;
        }
    }
-   servCapture.RunServerCapture(serverIP, listenPort);
+   servCapture.RunServerCapture_MMO_Fighter(serverIP, listenPort);
    playerManager.SetCapture(&servCapture);
    playerManager.SetServerAddress(serverIP, listenPort);
    playerManager.RunProcCapture();
