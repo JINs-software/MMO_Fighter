@@ -148,41 +148,43 @@ struct PlayerManager {
 			player->Set(hostID, sp, sp, port, hp);
 			players.insert(hostID, player);
 		}
-		else {
-			// CreatePlayer 요청이 들어왔지만 해당 id의 플레이어가 이미 존재하는 경우
-			// -> 객체를 삭제한다기보다 객체의 내용을 새로 갱신해주는 방식으로 ..
-
-			//players[hostID].servPoint = sp;
-			//WOA_Player_Lock(players[hostID]);
-			//players[hostID]->Set(hostID, sp, sp, port, hp);
-			////WOA_Player_Unlock(players[hostID]);
-			//playerPort[port] = hostID;	// 중복된 키의 경우 값 갱신
-
-			std::cout << "중복 ID 존재!!" << std::endl;
-			//assert(false);
-		}
-		//playersMtx.unlock();
-	}
-	void DeletePlayer(unsigned int hostID) {
-		//playersMtx.lock();
-		//if (players.find(hostID) != players.end()) {
-		//	players.erase(hostID);
+		//else {
+		//	// CreatePlayer 요청이 들어왔지만 해당 id의 플레이어가 이미 존재하는 경우
+		//	// -> 객체를 삭제한다기보다 객체의 내용을 새로 갱신해주는 방식으로 ..
 		//
-		//	//portMtx.lock();
-		//	unsigned short port = players[hostID]->port;
-		//	playerPort.erase(port);
-		//	//portMtx.unlock();
-		//	//std::cout << "DeletePlayer, id: " << hostID << ", port: " << port << std::endl;
+		//	//players[hostID].servPoint = sp;
+		//	//WOA_Player_Lock(players[hostID]);
+		//	//players[hostID]->Set(hostID, sp, sp, port, hp);
+		//	////WOA_Player_Unlock(players[hostID]);
+		//	//playerPort[port] = hostID;	// 중복된 키의 경우 값 갱신
+		//
+		//	std::cout << "중복 ID 존재!!" << std::endl;
+		//	//assert(false);
 		//}
+		// ===> 서버에서는 특정 플레이어 주변의 플레이어만 관심을 같도록 범위 내 다른 플레이어들에 대한 Create/Delete를 빈번하게 발생시킨다.
 		//playersMtx.unlock();
-
-		Player* player;
-		if (players.find(hostID, player)) {
-			playerPort.erase(player->port);
-			players.erase(hostID);
-			playerPool.ReturnMem((BYTE*)player);
-		}
 	}
+	//void DeletePlayer(unsigned int hostID) {
+	//	//playersMtx.lock();
+	//	//if (players.find(hostID) != players.end()) {
+	//	//	players.erase(hostID);
+	//	//
+	//	//	//portMtx.lock();
+	//	//	unsigned short port = players[hostID]->port;
+	//	//	playerPort.erase(port);
+	//	//	//portMtx.unlock();
+	//	//	//std::cout << "DeletePlayer, id: " << hostID << ", port: " << port << std::endl;
+	//	//}
+	//	//playersMtx.unlock();
+	//
+	//	Player* player;
+	//	if (players.find(hostID, player)) {
+	//		playerPort.erase(player->port);
+	//		players.erase(hostID);
+	//		playerPool.ReturnMem((BYTE*)player);
+	//	}
+	//}
+	// ===> 서버에서는 특정 플레이어 주변의 플레이어만 관심을 같도록 범위 내 다른 플레이어들에 대한 Create/Delete를 빈번하게 발생시킨다.
 
 	void MovePlayerServ(unsigned int hostID, Point sp) {
 		//playersMtx.lock();

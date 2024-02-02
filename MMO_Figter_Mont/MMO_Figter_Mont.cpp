@@ -63,8 +63,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 #endif
 
         // Open Console
-        AllocConsole();
-        freopen("CONOUT$", "wt", stdout);
+        //AllocConsole();
+        //freopen("CONOUT$", "wt", stdout);
 
         // 애플리케이션 초기화를 수행합니다:
         if (!InitInstance(hInstance, nCmdShow))

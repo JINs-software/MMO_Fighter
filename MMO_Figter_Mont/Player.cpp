@@ -450,7 +450,9 @@ void PlayerManager::FrameMove(BYTE loopMs) {
 			}
 
 			if (delFlag) {
+				playerPort.erase(iter->second->port);
 				iter = players.erase(iter->first);
+				playerPool.ReturnMem((BYTE*)iter->second);
 			}
 			else {
 				iter++;
