@@ -19,7 +19,6 @@ extern std::map<HostID, stObjectInfo*> gClientMap;
 extern std::vector<std::vector<stObjectInfo*>> gClientGrid;
 extern std::map<HostID, bool> gDeleteClientSet;
 extern std::queue<stAttackWork> AtkWorkQueue;
-//extern JiniPool;
 
 extern time_t gTime;
 

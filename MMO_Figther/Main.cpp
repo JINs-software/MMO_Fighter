@@ -40,9 +40,9 @@ class FighterGameBatch : public JNetBatchProcess
 		BatchMoveWork();
 	}
 
-	void BatchProcess(uint16 loopDelta) override {
+	void BatchProcess(uint16 g_LoopDelta) override {
 #ifdef NON_SLEEP_LOOP
-		if (loopDelta <= 0) {
+		if (g_LoopDelta <= 0) {
 			return;
 		}
 #endif
@@ -52,94 +52,110 @@ class FighterGameBatch : public JNetBatchProcess
 		//ConsoleLog();
 		BatchAttackWork();
 		BatchDeleteClientWork();
-		BatchMoveWork(loopDelta);
+		BatchMoveWork(g_LoopDelta);
 	}
 };
+
 FighterGameBatch fightGameBatch;
 FightGameS2C::Proxy g_Proxy;
 Stub g_Stub;
 EventHandler g_eventHnd;
+JNetServer* g_JNetServer;
+
+double g_LoopStart, g_LoopEnd, g_LoopDuration, g_OverTime;
+uint16 g_LoopCnt, g_LoopDelta;
+char g_CtrlChar;
+
+void Init();
+void Clear();
 
 int main() {
-	JNetServer* jnetServer = new JNetServer(false);
+	
+	Init();
 
-	jnetServer->AttachEventHandler(&g_eventHnd);
-	jnetServer->AttachProxy(&g_Proxy, VALID_PACKET_NUM);
-	jnetServer->AttachStub(&g_Stub, VALID_PACKET_NUM);
-	jnetServer->AttachBatchProcess(&fightGameBatch);
+	while (true) {
+		if (_kbhit()) {
+			g_CtrlChar = _getch();
+			if (g_CtrlChar == 'q' || g_CtrlChar == 'Q') {
+				break;
+			}
+		}
+
+#ifdef SLEEP_LOOP
+		g_JNetServer->FrameMove(1 + g_LoopDelta);
+		++g_LoopCnt;
+
+		g_LoopEnd = clock();
+		g_LoopDuration = (g_LoopEnd - g_LoopStart);
+		g_LoopStart = clock();
+
+		if (g_LoopDuration > SLEEP_TIME_MS) {
+			//ERROR_EXCEPTION_WINDOW(L"Main", L"g_LoopDuration > SLEEP_TIME_MS");
+			g_OverTime += (g_LoopDuration - SLEEP_TIME_MS);
+			g_LoopDelta = g_OverTime / SLEEP_TIME_MS;
+
+#ifdef DEBUG
+			std::cout << "[프레임 초과]" << endl;
+			std::cout << "g_LoopDelta: " << g_LoopDelta << std::endl;
+			std::cout << "g_LoopCnt: " << g_LoopCnt << std::endl;
+#endif // DEBUG
+			g_OverTime -= (g_LoopDelta * SLEEP_TIME_MS);
+		}
+		else {
+			g_LoopDelta = 0;
+			Sleep((double)SLEEP_TIME_MS - g_LoopDuration);
+		}
+#elif defined(NON_SLEEP_LOOP)
+		g_JNetServer->FrameMove(g_LoopDelta);
+		++g_LoopCnt;
+
+		g_LoopEnd = clock();
+		g_LoopDuration = (g_LoopEnd - g_LoopStart);
+		g_LoopStart = clock();
+
+		if (g_LoopDuration > SLEEP_TIME_MS) {
+#ifdef DEBUG
+			std::cout << "[프레임 초과]" << endl;
+			std::cout << "g_LoopDelta: " << g_LoopDelta << std::endl;
+			std::cout << "g_LoopCnt: " << g_LoopCnt << std::endl;
+#endif // DEBUG
+		}
+
+		g_OverTime += g_LoopDuration;
+		g_LoopDelta = g_OverTime / SLEEP_TIME_MS;
+		g_OverTime -= g_LoopDelta * SLEEP_TIME_MS;
+#endif // NON_SLEEP_LOOP
+
+	}
+
+	Clear();
+}
+
+
+void Init() {
+	g_JNetServer = new JNetServer(false);
+
+	g_JNetServer->AttachEventHandler(&g_eventHnd);
+	g_JNetServer->AttachProxy(&g_Proxy, VALID_PACKET_NUM);
+	g_JNetServer->AttachStub(&g_Stub, VALID_PACKET_NUM);
+	g_JNetServer->AttachBatchProcess(&fightGameBatch);
 
 	stServerStartParam startParam;
-	startParam.IP = "172.29.16.221";
-	startParam.Port = 20000;
+	//startParam.IP = "172.29.16.221";
+	//startParam.Port = 20000;
+	startParam.IP = SERVER_IP;
+	startParam.Port = SERVER_PORT;
 
-	jnetServer->Start(startParam);
+	g_JNetServer->Start(startParam);
 	std::cout << "Server Start!" << std::endl;
 
 	// 전역 타이머 작동 개시
 	gTime = time(NULL);
 
 	timeBeginPeriod(1);
-	double loopStart = clock();
-	double loopEnd;
-	double loopDuration;
-	uint16 loopCnt = 0;
-	uint16 loopDelta = 0;
-	double overTime = 0;
-	char ctrInput;
-	while (true) {
-		//if (_kbhit()) {
-		//	ctrInput = _getch();
-		//	if (ctrInput == 'q' || ctrInput == 'Q') {
-		//		break;
-		//	}
-		//}
+	g_LoopStart = clock();
+}
 
-#ifdef SLEEP_LOOP
-		jnetServer->FrameMove(1 + loopDelta);
-		++loopCnt;
-
-		loopEnd = clock();
-		loopDuration = (loopEnd - loopStart);
-
-		if (loopDuration > SLEEP_TIME_MS) {
-			//ERROR_EXCEPTION_WINDOW(L"Main", L"loopDuration > SLEEP_TIME_MS");
-			overTime += (loopDuration - SLEEP_TIME_MS);
-			loopDelta = overTime / SLEEP_TIME_MS;
-
-			std::cout << "[프레임 초과]" << endl;
-			std::cout << "loopDelta: " << loopDelta << std::endl;
-			std::cout << "loopCnt: " << loopCnt << std::endl;
-
-			overTime -= (loopDelta * SLEEP_TIME_MS);
-		}
-		else {
-			loopDelta = 0;
-			Sleep((double)SLEEP_TIME_MS - loopDuration);
-		}
-
-		loopStart = clock();
-#endif // SLEEP_LOOP
-#ifdef NON_SLEEP_LOOP
-		jnetServer->FrameMove(loopDelta);
-		++loopCnt;
-
-		loopEnd = clock();
-		loopDuration = (loopEnd - loopStart);
-		loopStart = clock();
-
-		if (loopDuration > SLEEP_TIME_MS) {
-			std::cout << "[프레임 초과]" << endl;
-			std::cout << "loopDelta: " << loopDelta << std::endl;
-			std::cout << "loopCnt: " << loopCnt << std::endl;
-		}
-
-		overTime += loopDuration;
-		loopDelta = overTime / SLEEP_TIME_MS;
-		overTime -= loopDelta * SLEEP_TIME_MS;
-
-		//loopStart = clock();
-#endif // NON_SLEEP_LOOP
-
-	}
+void Clear() {
 	timeEndPeriod(1);
 }

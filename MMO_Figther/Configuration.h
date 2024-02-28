@@ -1,5 +1,8 @@
 #pragma once
 
+#define SERVER_IP "127.0.0.1"
+#define SERVER_PORT 20000
+
 //#define SLEEP_LOOP
 #define NON_SLEEP_LOOP
 
@@ -20,8 +23,6 @@
 #define dfPACKET_MOVE_DIR_DD					6
 #define dfPACKET_MOVE_DIR_LD					7
 
-//#define SERVER_PORT 5000
-
 #define SLEEP_TIME_MS 40	// 20fps: 1초당 25프레임 -> 40ms당 1프레임
 							// 50fps: 1초당 50프레임 -> 20ms당 1프레임
 
@@ -39,8 +40,10 @@
 */
 #define dfRANGE_MOVE_TOP	0
 #define dfRANGE_MOVE_LEFT	0
-#define dfRANGE_MOVE_RIGHT	6400
-#define dfRANGE_MOVE_BOTTOM	6400
+//#define dfRANGE_MOVE_RIGHT	6400
+//#define dfRANGE_MOVE_BOTTOM	6400
+#define dfRANGE_MOVE_RIGHT	1000
+#define dfRANGE_MOVE_BOTTOM	1000
 
 /*
 * [클라이언트 그리드 셀 길이 단위

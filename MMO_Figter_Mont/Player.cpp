@@ -124,7 +124,13 @@ void PlayerManager::ProcPacket(stCapturedPacket packetBundle)
 		}
 	}
 
-	if (!closeFlag) {
+	//////////////////// 포트는 바로 삭제 시도
+	if (closeFlag) {
+		playerPort.erase(port);
+	}
+	//////////////////// 
+	else {
+	//if (!closeFlag) {
 		JBuffer jbuff(packetBundle.msgLen);
 		jbuff.Enqueue(packetBundle.msg, packetBundle.msgLen);
 		while (true) {
