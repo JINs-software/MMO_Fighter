@@ -15,7 +15,7 @@ public:
 	}
 	bool OnClientDisconnect(HostID remote) override {
 		DeleteFighter(remote, true);
-		//std::cout << "[OnClientDisconnect] host id: " << remote << ", DeleteFighter completed!" << std::endl;
+		//std::cout << "[OnClientDisconnect] host id: " << remote << ", Client Disconnected Event!" << std::endl;
 		return true;
 	}
 };

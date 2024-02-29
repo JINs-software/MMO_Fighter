@@ -14,7 +14,7 @@ time_t gTime;
 std::multimap<time_t, HostID> gTimeMap;
 
 // 메모리 풀
-JiniPool ObjectPool(sizeof(stObjectInfo), 7000);
+JiniPool ObjectPool(sizeof(stObjectInfo), MAXIMUM_FIGHTER);
 
 //===================================================================================================================
 
@@ -316,8 +316,20 @@ void GetRangeCell(const stPoint& objPos, uint16& topCell, uint16& bottomCell, ui
 		topCell = dfRANGE_GRID_TOP;
 		bottomCell = dfRANGE_GRID_TOP + dfGridCell_Row;
 	}
+	else if (cellY <= dfGridCell_Row) {
+		// 테두리에 인접한 캐릭터는 바라보지만, 
+		// 테두리에서 조금 벗어난 캐릭터는 테두리에 인접한 캐릭터를 바라보지 못하는 상황을 막기위해
+		// 테두리에서 조금 벗어난 캐릭터의 관심 범위를 넓힌다.
+		topCell = dfRANGE_GRID_TOP;
+		bottomCell = cellY + dfGridCell_Row / 2;
+	}
 	else if (dfRANGE_GRID_BOTTOM - dfGridCell_Row / 2 < cellY) {
 		topCell = dfRANGE_GRID_BOTTOM - dfGridCell_Row;
+		bottomCell = dfRANGE_GRID_BOTTOM;
+	}
+	else if (dfRANGE_GRID_BOTTOM - dfGridCell_Row <= cellY) {
+		// ""
+		topCell = cellY - dfGridCell_Row / 2;
 		bottomCell = dfRANGE_GRID_BOTTOM;
 	}
 	else {
@@ -329,8 +341,18 @@ void GetRangeCell(const stPoint& objPos, uint16& topCell, uint16& bottomCell, ui
 		leftCell = dfRANGE_GRID_LEFT;
 		rightCell = dfRANGE_GRID_LEFT + dfGridCell_Col;
 	}
+	else if (cellX <= dfGridCell_Col) {
+		// ""
+		leftCell = dfRANGE_GRID_LEFT;
+		rightCell = cellX + dfGridCell_Col / 2;
+	}
 	else if (dfRANGE_GRID_RIGHT - dfGridCell_Col / 2 < cellX) {
 		leftCell = dfRANGE_GRID_RIGHT - dfGridCell_Col;
+		rightCell = dfRANGE_GRID_RIGHT;
+	}
+	else if (dfRANGE_GRID_RIGHT - dfGridCell_Col <= cellX) {
+		// ""
+		leftCell = cellX - dfGridCell_Col / 2;
 		rightCell = dfRANGE_GRID_RIGHT;
 	}
 	else {
@@ -355,103 +377,195 @@ void GridResetInterestSpace(stPoint beforePos, stObjectInfo* object, Grid* grid,
 	BYTE crtBodyLen = sizeof(object->uiID) + sizeof(object->byDir) + sizeof(object->stPos) + sizeof(object->byHP);
 	BYTE moveBodyLen = sizeof(object->uiID) + sizeof(object->byDir) + sizeof(object->stPos);
 
-	std::pair<bool, uint16> delRow = { false, 0 };
-	std::pair<bool, uint16> delCol = { false, 0 };
-	std::pair<bool, uint16> crtRow = { false, 0 };
-	std::pair<bool, uint16> crtCol = { false, 0 };
+	//std::pair<bool, uint16> delRow = { false, 0 };
+	//std::pair<bool, uint16> delCol = { false, 0 };
+	//std::pair<bool, uint16> crtRow = { false, 0 };
+	//std::pair<bool, uint16> crtCol = { false, 0 };
+	std::pair<bool, pair<uint16, uint16>> delRow = { false, {0, 0} };
+	std::pair<bool, pair<uint16, uint16>> delCol = { false, {0, 0} };
+	std::pair<bool, pair<uint16, uint16>> crtRow = { false, {0, 0} };
+	std::pair<bool, pair<uint16, uint16>> crtCol = { false, {0, 0} };
 	if (leftCellBefore < leftCell) {
 		// 기존: |----------?
 		// 이동:  |=========?
 		delCol.first = true;
-		delCol.second = leftCellBefore;
+		//delCol.second = leftCellBefore;
+		delCol.second.first = leftCellBefore;
+		delCol.second.second = leftCell - 1;
 	}
 	else if (leftCellBefore > leftCell) {
 		// 기존:  |---------?
 		// 이동: |==========?
 		crtCol.first = true;
-		crtCol.second = leftCell;
+		//crtCol.second = leftCell;
+		crtCol.second.first = leftCell;
+		crtCol.second.second = leftCellBefore - 1;
 	}
 	if (rightCellBefore < rightCell) {
 		// 기존: ?---------|
 		// 이동: ?==========|
 		crtCol.first = true;
-		crtCol.second = rightCell;
+		//crtCol.second = rightCell;
+		crtCol.second.first = rightCellBefore + 1;
+		crtCol.second.second = rightCell;
 	}
 	else if (rightCellBefore > rightCell) {
 		// 기존: ?----------|
 		// 이동: ?=========|
 		delCol.first = true;
-		delCol.second = rightCellBefore;
+		//delCol.second = rightCellBefore;
+		delCol.second.first = rightCell + 1;
+		delCol.second.second = rightCellBefore;
 	}
 
 	if (topCellBefore < topCell) {
+		// |
+		// | |
+		// | |
+		// ? ?
 		delRow.first = true;
-		delRow.second = topCellBefore;
+		//delRow.second = topCellBefore;
+		delRow.second.first = topCellBefore;
+		delRow.second.second = topCell - 1;
 	}
 	else if (topCellBefore > topCell) {
+		//   |
+		// | |
+		// | |
+		// ? ?
 		crtRow.first = true;
-		crtRow.second = topCell;
+		//crtRow.second = topCell;
+		crtRow.second.first = topCell;
+		crtRow.second.second = topCellBefore - 1;
 	}
 	if (bottomCellBefore < bottomCell) {
+		// ? ?
+		// | |
+		// | |
+		//   |
 		crtRow.first = true;
-		crtRow.second = bottomCell;
+		//crtRow.second = bottomCell;
+		crtRow.second.first = bottomCellBefore + 1;
+		crtRow.second.second = bottomCell;
 	}
 	else if (bottomCellBefore > bottomCell) {
+		// ? ?
+		// | |
+		// | |
+		// | 
 		delRow.first = true;
-		delRow.second = bottomCellBefore;
+		//delRow.second = bottomCellBefore;
+		delRow.second.first = bottomCell + 1;
+		delRow.second.second = bottomCellBefore;
 	}
 
 	if (delRow.first && delCol.first) {	// ㄴ ㄱ . . 삭제
 		// (1) 꼭지점 삭제
-		for (stObjectInfo* nearPlayer = grid->cells[delRow.second][delCol.second]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
-			if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-				g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
-				g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+		//for (stObjectInfo* nearPlayer = grid->cells[delRow.second][delCol.second]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+		//	if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
+		//		g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
+		//		g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+		//	}
+		//}
+		for (uint16 cx = delCol.second.first; cx <= delCol.second.second; cx++) {
+			for (uint16 cy = delRow.second.first; cy <= delRow.second.second; cy++) {
+				for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+					g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
+					g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+				}
 			}
 		}
+
 		// (2-1) ㅡ 변 삭제
 		for (uint16 cx = leftCellBefore; cx <= rightCellBefore; cx++) {
-			if (cx != delCol.second) {
-				uint16 cy = delRow.second;
-				for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
-					if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-						g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
-						g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+			//if (cx != delCol.second) {
+			//	uint16 cy = delRow.second;
+			//	for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+			//		if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
+			//			g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
+			//			g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+			//		}
+			//	}
+			//}
+			if (delCol.second.first <= cx && cx <= delCol.second.second) {
+				continue;
+			}
+			else {
+				for (uint16 cy = delRow.second.first; cy <= delRow.second.second; cy++) {
+					for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+						if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
+							g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
+							g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+						}
 					}
 				}
 			}
 		}
+
 		// (2-1) | 변 삭제
 		for (uint16 cy = topCellBefore; cy <= bottomCellBefore; cy++) {
-			if (cy != delRow.second) {
-				uint16 cx = delCol.second;
-				for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
-					if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-						g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
-						g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+			//if (cy != delRow.second) {
+			//	uint16 cx = delCol.second;
+			//	for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+			//		if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
+			//			g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
+			//			g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+			//		}
+			//	}
+			//}
+			if (delRow.second.first <= cy && cy <= delRow.second.second) {
+				continue;
+			}
+			else {
+				for(uint16 cx = delCol.second.first; cx <= delCol.second.second; cx++) {
+					for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+						if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
+							g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
+							g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+						}
 					}
 				}
 			}
 		}
 	}
 	else if (delRow.first) {	// ㅡ 삭제
+		//for (uint16 cx = leftCellBefore; cx <= rightCellBefore; cx++) {
+		//	uint16 cy = delRow.second;
+		//	for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+		//		if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
+		//			g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
+		//			g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+		//		}
+		//	}
+		//}
 		for (uint16 cx = leftCellBefore; cx <= rightCellBefore; cx++) {
-			uint16 cy = delRow.second;
-			for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
-				if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-					g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
-					g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+			for (uint16 cy = delRow.second.first; cy <= delRow.second.second; cy++) {
+				for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+					if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
+						g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
+						g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+					}
 				}
 			}
 		}
 	}
 	else if (delCol.first) {	// | 삭제
+		//for (uint16 cy = topCellBefore; cy <= bottomCellBefore; cy++) {
+		//	uint16 cx = delCol.second;
+		//	for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+		//		if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
+		//			g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
+		//			g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+		//		}
+		//	}
+		//}
 		for (uint16 cy = topCellBefore; cy <= bottomCellBefore; cy++) {
-			uint16 cx = delCol.second;
-			for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
-				if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-					g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
-					g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+			for (uint16 cx = delCol.second.first; cx <= delCol.second.second; cx++) {
+				for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+					if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
+						g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
+						g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+					}
 				}
 			}
 		}
@@ -459,30 +573,91 @@ void GridResetInterestSpace(stPoint beforePos, stObjectInfo* object, Grid* grid,
 
 	if (crtRow.first && crtCol.first) {	// ㄴ ㄱ . . 생성
 		// (1) 꼭지점 생성
-		for (stObjectInfo* nearPlayer = grid->cells[crtRow.second][crtCol.second]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
-			if (nearPlayer->uiID != object->uiID) {
-				g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
-				g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
-				g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+		//for (stObjectInfo* nearPlayer = grid->cells[crtRow.second][crtCol.second]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+		//	if (nearPlayer->uiID != object->uiID) {
+		//		g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
+		//		g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+		//		g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+		//	}
+		//}
+		for (uint16 cx = crtCol.second.first; cx <= crtCol.second.second; cx++) {
+			for (uint16 cy = crtRow.second.first; cy <= crtRow.second.second; cy++) {
+				for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+					g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
+					g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+					g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+				}
 			}
 		}
+
 		// (2-1) ㅡ 변 생성
 		for (uint16 cx = leftCell; cx <= rightCell; cx++) {
-			if (cx != crtCol.second) {
-				uint16 cy = crtRow.second;
-				for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
-					if (nearPlayer->uiID != object->uiID) {
-						g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
-						g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
-						g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+			//if (cx != crtCol.second) {
+			//	uint16 cy = crtRow.second;
+			//	for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+			//		if (nearPlayer->uiID != object->uiID) {
+			//			g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
+			//			g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+			//			g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+			//		}
+			//	}
+			//}
+			if (crtCol.second.first <= cx && cx <= crtCol.second.second) {
+				continue;
+			}
+			else {
+				for (uint16 cy = crtRow.second.first; cy <= crtRow.second.second; cy++) {
+					for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+						if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
+							g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
+							g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+							g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+						}
 					}
 				}
 			}
 		}
 		// (2-1) | 변 생성
 		for (uint16 cy = topCell; cy <= bottomCell; cy++) {
-			if (cy != crtRow.second) {
-				uint16 cx = crtCol.second;
+			//if (cy != crtRow.second) {
+			//	uint16 cx = crtCol.second;
+			//	for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+			//		if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
+			//			g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
+			//			g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+			//			g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+			//		}
+			//	}
+			//}
+			if (crtRow.second.first <= cy && cy <= crtRow.second.second) {
+				continue;
+			}
+			else {
+				for (uint16 cx = crtCol.second.first; cx <= crtCol.second.second; cx++) {
+					for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+						if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
+							g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
+							g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+							g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+						}
+					}
+				}
+			}
+		}
+	}
+	else if (crtRow.first) {	// ㅡ 생성
+		//for (uint16 cx = leftCell; cx <= rightCell; cx++) {
+		//	uint16 cy = crtRow.second;
+		//	for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+		//		if (nearPlayer->uiID != object->uiID) {
+		//			g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
+		//			g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+		//			g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+		//		}
+		//	}
+		//}
+		for (uint16 cx = leftCell; cx <= rightCell; cx++) {
+			for (uint16 cy = crtRow.second.first; cy <= crtRow.second.second; cy++) {
 				for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
 						g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
@@ -493,26 +668,25 @@ void GridResetInterestSpace(stPoint beforePos, stObjectInfo* object, Grid* grid,
 			}
 		}
 	}
-	else if (crtRow.first) {	// ㅡ 생성
-		for (uint16 cx = leftCell; cx <= rightCell; cx++) {
-			uint16 cy = crtRow.second;
-			for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
-				if (nearPlayer->uiID != object->uiID) {
-					g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
-					g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
-					g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
-				}
-			}
-		}
-	}
 	else if (crtCol.first) {	// | 생성
+		//for (uint16 cy = topCell; cy <= bottomCell; cy++) {
+		//	uint16 cx = crtCol.second;
+		//	for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+		//		if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
+		//			g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
+		//			g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+		//			g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+		//		}
+		//	}
+		//}
 		for (uint16 cy = topCell; cy <= bottomCell; cy++) {
-			uint16 cx = crtCol.second;
-			for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
-				if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-					g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
-					g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
-					g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+			for (uint16 cx = crtCol.second.first; cx <= crtCol.second.second; cx++) {
+				for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+					if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
+						g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
+						g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+						g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+					}
 				}
 			}
 		}
@@ -609,6 +783,8 @@ void ForwardMsgToNear(stObjectInfo* object, Grid* grid, RpcID msgID) {
 	}
 	}
 }
+
+
 void ForwardCRTMsg(stObjectInfo* object, Grid* grid)
 {
 	uint16 topCell;
@@ -628,7 +804,6 @@ void ForwardCRTMsg(stObjectInfo* object, Grid* grid)
 			}
 		}
 	}
-
 }
 void ForwardDmgMsg(stObjectInfo* attacker, stObjectInfo* target, Grid* grid) {
 	uint16 topCellAttaker = 0;

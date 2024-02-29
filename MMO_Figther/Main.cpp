@@ -94,11 +94,11 @@ int main() {
 			g_OverTime += (g_LoopDuration - SLEEP_TIME_MS);
 			g_LoopDelta = g_OverTime / SLEEP_TIME_MS;
 
-#ifdef DEBUG
+#if defined(CONSOLE_LOG)
 			std::cout << "[프레임 초과]" << endl;
 			std::cout << "g_LoopDelta: " << g_LoopDelta << std::endl;
 			std::cout << "g_LoopCnt: " << g_LoopCnt << std::endl;
-#endif // DEBUG
+#endif 
 			g_OverTime -= (g_LoopDelta * SLEEP_TIME_MS);
 		}
 		else {
@@ -113,14 +113,13 @@ int main() {
 		g_LoopDuration = (g_LoopEnd - g_LoopStart);
 		g_LoopStart = clock();
 
+#if defined(CONSOLE_LOG)
 		if (g_LoopDuration > SLEEP_TIME_MS) {
-#ifdef DEBUG
 			std::cout << "[프레임 초과]" << endl;
 			std::cout << "g_LoopDelta: " << g_LoopDelta << std::endl;
 			std::cout << "g_LoopCnt: " << g_LoopCnt << std::endl;
-#endif // DEBUG
 		}
-
+#endif
 		g_OverTime += g_LoopDuration;
 		g_LoopDelta = g_OverTime / SLEEP_TIME_MS;
 		g_OverTime -= g_LoopDelta * SLEEP_TIME_MS;

@@ -3,6 +3,8 @@
 #define SERVER_IP "127.0.0.1"
 #define SERVER_PORT 20000
 
+#define MAXIMUM_FIGHTER 20000
+
 //#define SLEEP_LOOP
 #define NON_SLEEP_LOOP
 
@@ -40,10 +42,10 @@
 */
 #define dfRANGE_MOVE_TOP	0
 #define dfRANGE_MOVE_LEFT	0
-//#define dfRANGE_MOVE_RIGHT	6400
-//#define dfRANGE_MOVE_BOTTOM	6400
-#define dfRANGE_MOVE_RIGHT	1000
-#define dfRANGE_MOVE_BOTTOM	1000
+#define dfRANGE_MOVE_RIGHT	6400
+#define dfRANGE_MOVE_BOTTOM	6400
+//#define dfRANGE_MOVE_RIGHT	1600
+//#define dfRANGE_MOVE_BOTTOM	1600
 
 /*
 * [클라이언트 그리드 셀 길이 단위

@@ -7,7 +7,7 @@ namespace FightGameS2C {
 #ifdef DIRECT_ACCESS_TO_JNETSESSION
 		stJNetSession* jnetSession = GetJNetSession(remote);
 		if (jnetSession != nullptr) {
-			JBuffer& buff = (*jnetSession->sendBuff);
+			JBuffer& buff = (jnetSession->sendBuff);
 			if (buff.GetFreeSize() >= msgLen) {
 				buff << byCode;
 				buff << bySize;
@@ -52,7 +52,7 @@ namespace FightGameS2C {
 #ifdef DIRECT_ACCESS_TO_JNETSESSION
 		stJNetSession* jnetSession = GetJNetSession(remote);
 		if (jnetSession != nullptr) {
-			JBuffer& buff = (*jnetSession->sendBuff);
+			JBuffer& buff = (jnetSession->sendBuff);
 			if (buff.GetFreeSize() >= msgLen) {
 				buff << byCode;
 				buff << bySize;
@@ -97,7 +97,7 @@ namespace FightGameS2C {
 #ifdef DIRECT_ACCESS_TO_JNETSESSION
 		stJNetSession* jnetSession = GetJNetSession(remote);
 		if (jnetSession != nullptr) {
-			JBuffer& buff = (*jnetSession->sendBuff);
+			JBuffer& buff = (jnetSession->sendBuff);
 			if (buff.GetFreeSize() >= msgLen) {
 				buff << byCode;
 				buff << bySize;
@@ -134,7 +134,7 @@ namespace FightGameS2C {
 #ifdef DIRECT_ACCESS_TO_JNETSESSION
 		stJNetSession* jnetSession = GetJNetSession(remote);
 		if (jnetSession != nullptr) {
-			JBuffer& buff = (*jnetSession->sendBuff);
+			JBuffer& buff = (jnetSession->sendBuff);
 			if (buff.GetFreeSize() >= msgLen) {
 				buff << byCode;
 				buff << bySize;
@@ -177,7 +177,7 @@ namespace FightGameS2C {
 #ifdef DIRECT_ACCESS_TO_JNETSESSION
 		stJNetSession* jnetSession = GetJNetSession(remote);
 		if (jnetSession != nullptr) {
-			JBuffer& buff = (*jnetSession->sendBuff);
+			JBuffer& buff = (jnetSession->sendBuff);
 			if (buff.GetFreeSize() >= msgLen) {
 				buff << byCode;
 				buff << bySize;
@@ -220,7 +220,7 @@ namespace FightGameS2C {
 #ifdef DIRECT_ACCESS_TO_JNETSESSION
 		stJNetSession* jnetSession = GetJNetSession(remote);
 		if (jnetSession != nullptr) {
-			JBuffer& buff = (*jnetSession->sendBuff);
+			JBuffer& buff = (jnetSession->sendBuff);
 			if (buff.GetFreeSize() >= msgLen) {
 				buff << byCode;
 				buff << bySize;
@@ -261,7 +261,7 @@ namespace FightGameS2C {
 #ifdef DIRECT_ACCESS_TO_JNETSESSION
 		stJNetSession* jnetSession = GetJNetSession(remote);
 		if (jnetSession != nullptr) {
-			JBuffer& buff = (*jnetSession->sendBuff);
+			JBuffer& buff = (jnetSession->sendBuff);
 			if (buff.GetFreeSize() >= msgLen) {
 				buff << byCode;
 				buff << bySize;
@@ -302,7 +302,7 @@ namespace FightGameS2C {
 #ifdef DIRECT_ACCESS_TO_JNETSESSION
 		stJNetSession* jnetSession = GetJNetSession(remote);
 		if (jnetSession != nullptr) {
-			JBuffer& buff = (*jnetSession->sendBuff);
+			JBuffer& buff = (jnetSession->sendBuff);
 			if (buff.GetFreeSize() >= msgLen) {
 				buff << byCode;
 				buff << bySize;
@@ -343,7 +343,7 @@ namespace FightGameS2C {
 #ifdef DIRECT_ACCESS_TO_JNETSESSION
 		stJNetSession* jnetSession = GetJNetSession(remote);
 		if (jnetSession != nullptr) {
-			JBuffer& buff = (*jnetSession->sendBuff);
+			JBuffer& buff = (jnetSession->sendBuff);
 			if (buff.GetFreeSize() >= msgLen) {
 				buff << byCode;
 				buff << bySize;
@@ -382,7 +382,7 @@ namespace FightGameS2C {
 #ifdef DIRECT_ACCESS_TO_JNETSESSION
 		stJNetSession* jnetSession = GetJNetSession(remote);
 		if (jnetSession != nullptr) {
-			JBuffer& buff = (*jnetSession->sendBuff);
+			JBuffer& buff = (jnetSession->sendBuff);
 			if (buff.GetFreeSize() >= msgLen) {
 				buff << byCode;
 				buff << bySize;
@@ -421,7 +421,7 @@ namespace FightGameS2C {
 #ifdef DIRECT_ACCESS_TO_JNETSESSION
 		stJNetSession* jnetSession = GetJNetSession(remote);
 		if (jnetSession != nullptr) {
-			JBuffer& buff = (*jnetSession->sendBuff);
+			JBuffer& buff = (jnetSession->sendBuff);
 			if (buff.GetFreeSize() >= msgLen) {
 				buff << byCode;
 				buff << bySize;
@@ -460,7 +460,7 @@ namespace FightGameC2S {
 #ifdef DIRECT_ACCESS_TO_JNETSESSION
 		stJNetSession* jnetSession = GetJNetSession(remote);
 		if (jnetSession != nullptr) {
-			JBuffer& buff = (*jnetSession->sendBuff);
+			JBuffer& buff = (jnetSession->sendBuff);
 			if (buff.GetFreeSize() >= msgLen) {
 				buff << byCode;
 				buff << bySize;
@@ -499,7 +499,7 @@ namespace FightGameC2S {
 #ifdef DIRECT_ACCESS_TO_JNETSESSION
 		stJNetSession* jnetSession = GetJNetSession(remote);
 		if (jnetSession != nullptr) {
-			JBuffer& buff = (*jnetSession->sendBuff);
+			JBuffer& buff = (jnetSession->sendBuff);
 			if (buff.GetFreeSize() >= msgLen) {
 				buff << byCode;
 				buff << bySize;
@@ -538,7 +538,7 @@ namespace FightGameC2S {
 #ifdef DIRECT_ACCESS_TO_JNETSESSION
 		stJNetSession* jnetSession = GetJNetSession(remote);
 		if (jnetSession != nullptr) {
-			JBuffer& buff = (*jnetSession->sendBuff);
+			JBuffer& buff = (jnetSession->sendBuff);
 			if (buff.GetFreeSize() >= msgLen) {
 				buff << byCode;
 				buff << bySize;
@@ -577,7 +577,7 @@ namespace FightGameC2S {
 #ifdef DIRECT_ACCESS_TO_JNETSESSION
 		stJNetSession* jnetSession = GetJNetSession(remote);
 		if (jnetSession != nullptr) {
-			JBuffer& buff = (*jnetSession->sendBuff);
+			JBuffer& buff = (jnetSession->sendBuff);
 			if (buff.GetFreeSize() >= msgLen) {
 				buff << byCode;
 				buff << bySize;
@@ -616,7 +616,7 @@ namespace FightGameC2S {
 #ifdef DIRECT_ACCESS_TO_JNETSESSION
 		stJNetSession* jnetSession = GetJNetSession(remote);
 		if (jnetSession != nullptr) {
-			JBuffer& buff = (*jnetSession->sendBuff);
+			JBuffer& buff = (jnetSession->sendBuff);
 			if (buff.GetFreeSize() >= msgLen) {
 				buff << byCode;
 				buff << bySize;
@@ -655,7 +655,7 @@ namespace FightGameC2S {
 #ifdef DIRECT_ACCESS_TO_JNETSESSION
 		stJNetSession* jnetSession = GetJNetSession(remote);
 		if (jnetSession != nullptr) {
-			JBuffer& buff = (*jnetSession->sendBuff);
+			JBuffer& buff = (jnetSession->sendBuff);
 			if (buff.GetFreeSize() >= msgLen) {
 				buff << byCode;
 				buff << bySize;
