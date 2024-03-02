@@ -2,19 +2,20 @@
 #include <ctime>
 
 extern FightGameS2C::Proxy g_Proxy;
-std::map<HostID, stObjectInfo*> gClientMap;
-std::vector<std::vector<stObjectInfo*>> gClientGrid(dfRANGE_MOVE_BOTTOM + 1, std::vector<stObjectInfo*>(dfRANGE_MOVE_RIGHT + 1, nullptr));
-std::map<HostID, bool> gDeleteClientSet;
-std::queue<stAttackWork> AtkWorkQueue;
+std::map<HostID, stObjectInfo*> g_ClientMap;
+std::vector<std::vector<stObjectInfo*>> g_ClientGrid(dfRANGE_MOVE_BOTTOM + 1, std::vector<stObjectInfo*>(dfRANGE_MOVE_RIGHT + 1, nullptr));
+std::map<HostID, bool> g_DeleteClientSet;
+std::queue<stAttackWork> g_AtkWorkQueue;
 
-Grid gGrid(dfRANGE_MOVE_BOTTOM, dfRANGE_MOVE_RIGHT);
+Grid g_Grid(dfRANGE_MOVE_BOTTOM, dfRANGE_MOVE_RIGHT);
 
 // 전역의 타이머
-time_t gTime;
-std::multimap<time_t, HostID> gTimeMap;
+time_t g_Time;
+//std::multimap<time_t, HostID> g_TimeMap;
+std::set<pair<time_t, HostID>/*, std::greater<pair<time_t, HostID>>*/> g_TimeSet;
 
 // 메모리 풀
-JiniPool ObjectPool(sizeof(stObjectInfo), MAXIMUM_FIGHTER);
+JiniPool g_ObjectPool(sizeof(stObjectInfo), MAXIMUM_FIGHTER);
 
 //===================================================================================================================
 
@@ -35,15 +36,15 @@ JiniPool ObjectPool(sizeof(stObjectInfo), MAXIMUM_FIGHTER);
 // 그리드 관리
 //////////////////////////////
 void InsertToGrid(uint16_t Y, uint16_t X, HostID id) {
-	if (gClientGrid[Y][X] == nullptr) {
-		gClientGrid[Y][X] = gClientMap[id];
+	if (g_ClientGrid[Y][X] == nullptr) {
+		g_ClientGrid[Y][X] = g_ClientMap[id];
 	}
 	else {
-		stObjectInfo* beforePtr = gClientGrid[Y][X];
-		stObjectInfo* objPtr = gClientGrid[Y][X]->nextGridObj;
+		stObjectInfo* beforePtr = g_ClientGrid[Y][X];
+		stObjectInfo* objPtr = g_ClientGrid[Y][X]->nextGridObj;
 		while (true) {
 			if (objPtr == nullptr) {
-				beforePtr->nextGridObj = gClientMap[id];
+				beforePtr->nextGridObj = g_ClientMap[id];
 				break;
 			}
 			else {
@@ -54,13 +55,13 @@ void InsertToGrid(uint16_t Y, uint16_t X, HostID id) {
 	}
 }
 void DeleteFromGrid(uint16_t Y, uint16_t X, HostID id) {
-	if (gClientGrid[Y][X] == nullptr) {
+	if (g_ClientGrid[Y][X] == nullptr) {
 		return;
 	}
 
-	stObjectInfo* objPtr = gClientGrid[Y][X];
+	stObjectInfo* objPtr = g_ClientGrid[Y][X];
 	if (objPtr->uiID == id) {
-		gClientGrid[Y][X] = objPtr->nextGridObj;
+		g_ClientGrid[Y][X] = objPtr->nextGridObj;
 		objPtr->nextGridObj = nullptr;
 	}
 	else {
@@ -90,7 +91,7 @@ void FowardCRTMsg(stObjectInfo* newObject) {		// 새로 생성될 객체가 서버 관리 자
 	BYTE bodyLen = sizeof(newObject->uiID) + sizeof(newObject->byDir) + sizeof(newObject->stPos) + sizeof(newObject->byHP);
 	for (uint16_t y = top; y <= bottom; y++) {
 		for (uint16_t x = left; x <= right; x++) {
-			for(stObjectInfo* nearPlayer = gClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+			for(stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 				g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, newObject->uiID, newObject->byDir, newObject->stPos.usX, newObject->stPos.usY, newObject->byHP);
 				g_Proxy.CRT_OTHER_CHARACTER(newObject->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
 			}
@@ -111,7 +112,7 @@ void ForwardDmgMsg(stObjectInfo* attacker, stObjectInfo* target) {
 	BYTE bodyLen = sizeof(attacker->uiID) + sizeof(target->uiID) + sizeof(BYTE);
 	for (uint16_t y = top; y <= bottom; y++) {
 		for (uint16_t x = left; x <= right; x++) {
-			for (stObjectInfo* nearPlayer = gClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+			for (stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 				g_Proxy.DAMAGE(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_DAMAGE, attacker->uiID, target->uiID, target->byHP);
 			}
 		}
@@ -128,7 +129,7 @@ void ForwardMsgToNear(stObjectInfo* player, RpcID msgID) {
 		BYTE bodyLen = sizeof(player->uiID);
 		for (uint16_t y = top; y <= bottom; y++) {
 			for (uint16_t x = left; x <= right; x++) {
-				for (stObjectInfo* nearPlayer = gClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+				for (stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					if (nearPlayer->uiID != player->uiID) {		// 삭제 대상에는 포워딩 대상 제외
 						g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_DEL_CHARACTER, player->uiID);
 					}
@@ -141,7 +142,7 @@ void ForwardMsgToNear(stObjectInfo* player, RpcID msgID) {
 		BYTE bodyLen = sizeof(player->uiID) + sizeof(player->byDir) + sizeof(player->stPos.usX) + sizeof(player->stPos.usY);
 		for (uint16_t y = top; y <= bottom; y++) {
 			for (uint16_t x = left; x <= right; x++) {
-				for (stObjectInfo* nearPlayer = gClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+				for (stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					if (nearPlayer->uiID != player->uiID) {	// 이동 대상은 메시지 포워딩 대상 제외						
 						//std::cout << "[Forward Start] X: " << x << ", Y: " << y << std::endl;
 						g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_MOVE_START, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY);
@@ -155,7 +156,7 @@ void ForwardMsgToNear(stObjectInfo* player, RpcID msgID) {
 		BYTE bodyLen = sizeof(player->uiID) + sizeof(player->byDir) + sizeof(player->stPos.usX) + sizeof(player->stPos.usY);
 		for (uint16_t y = top; y <= bottom; y++) {
 			for (uint16_t x = left; x <= right; x++) {
-				for (stObjectInfo* nearPlayer = gClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+				for (stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					if (nearPlayer->uiID != player->uiID) {	// 이동 대상은 메시지 포워딩 대상 제외
 						//std::cout << "[Forward Stop] X: " << x << ", Y: " << y << std::endl;
 						g_Proxy.MOVE_STOP(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_MOVE_STOP, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY);
@@ -169,7 +170,7 @@ void ForwardMsgToNear(stObjectInfo* player, RpcID msgID) {
 		BYTE bodyLen = sizeof(player->uiID) + sizeof(player->byDir) + sizeof(player->stPos.usX) + sizeof(player->stPos.usY);
 		for (uint16_t y = top; y <= bottom; y++) {
 			for (uint16_t x = left; x <= right; x++) {
-				for (stObjectInfo* nearPlayer = gClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+				for (stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					if (nearPlayer->uiID != player->uiID) {	// 공격자는 메시지 포워딩 대상 제외
 						g_Proxy.ATTACK1(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_ATTACK1, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY);
 					}
@@ -182,7 +183,7 @@ void ForwardMsgToNear(stObjectInfo* player, RpcID msgID) {
 		BYTE bodyLen = sizeof(player->uiID) + sizeof(player->byDir) + sizeof(player->stPos.usX) + sizeof(player->stPos.usY);
 		for (uint16_t y = top; y <= bottom; y++) {
 			for (uint16_t x = left; x <= right; x++) {
-				for (stObjectInfo* nearPlayer = gClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+				for (stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					if (nearPlayer->uiID != player->uiID) {	// 공격자는 메시지 포워딩 대상 제외
 						g_Proxy.ATTACK2(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_ATTACK2, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY);
 					}
@@ -195,7 +196,7 @@ void ForwardMsgToNear(stObjectInfo* player, RpcID msgID) {
 		BYTE bodyLen = sizeof(player->uiID) + sizeof(player->byDir) + sizeof(player->stPos.usX) + sizeof(player->stPos.usY);
 		for (uint16_t y = top; y <= bottom; y++) {
 			for (uint16_t x = left; x <= right; x++) {
-				for (stObjectInfo* nearPlayer = gClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+				for (stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					if (nearPlayer->uiID != player->uiID) {	// 공격자는 메시지 포워딩 대상 제외
 						g_Proxy.ATTACK3(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_ATTACK3, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY);
 					}
@@ -262,7 +263,7 @@ void FowardCrtDelMsgByMove(stObjectInfo* player, const stPoint& beforePos) {
 	for (uint16_t y = topBefore; y <= bottomBefore; y++) {
 		// x 변동 삭제
 		for (uint16_t x = delLeft; x < delRight; x++) {
-			for (stObjectInfo* nearPlayer = gClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+			for (stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 				if (nearPlayer->uiID != player->uiID) {		// 삭제 대상에는 포워딩 대상 제외
 					g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, sizeof(player->uiID), FightGameS2C::RPC_DEL_CHARACTER, player->uiID);
 					g_Proxy.DEL_CHARACTER(player->uiID, VALID_PACKET_NUM, sizeof(player->uiID), FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
@@ -273,7 +274,7 @@ void FowardCrtDelMsgByMove(stObjectInfo* player, const stPoint& beforePos) {
 	for (uint16_t y = top; y <= bottom; y++) {
 		// x 변동 생성
 		for (uint16_t x = crtLeft; x < crtRight; x++) {
-			for (stObjectInfo* nearPlayer = gClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+			for (stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 				if (nearPlayer->uiID != player->uiID) {		// 삭제 대상에는 포워딩 대상 제외
 					g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY, player->byHP);
 					g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY);
@@ -286,7 +287,7 @@ void FowardCrtDelMsgByMove(stObjectInfo* player, const stPoint& beforePos) {
 	for (uint16_t x = leftBefore; x <= rightBefore; x++) {
 		// y 변동 삭제
 		for (uint16_t y = delTop; y < delBottom; y++) {
-			for (stObjectInfo* nearPlayer = gClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+			for (stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 				if (nearPlayer->uiID != player->uiID) {		// 삭제 대상에는 포워딩 대상 제외
 					g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, sizeof(player->uiID), FightGameS2C::RPC_DEL_CHARACTER, player->uiID);
 					g_Proxy.DEL_CHARACTER(player->uiID, VALID_PACKET_NUM, sizeof(player->uiID), FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
@@ -297,7 +298,7 @@ void FowardCrtDelMsgByMove(stObjectInfo* player, const stPoint& beforePos) {
 	for (uint16_t x = left; x <= right; x++) {
 		// y 변동 생성
 		for (uint16_t y = crtTop; y < crtBottom; y++) {
-			for (stObjectInfo* nearPlayer = gClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
+			for (stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 				if (nearPlayer->uiID != player->uiID) {		// 삭제 대상에는 포워딩 대상 제외
 					g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY, player->byHP);
 					g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY);
@@ -840,6 +841,26 @@ void SyncPosition(stObjectInfo* player) {
 }
 
 //////////////////////////////
+// g_TimeSet 갱신
+//////////////////////////////
+void ResetTime(stObjectInfo* player) {
+#if defined(TIME_SET)
+	auto playerTimeIter = g_TimeSet.find({ player->lastEchoTime, player->uiID });
+	if (playerTimeIter != g_TimeSet.end()) {
+		g_TimeSet.erase(playerTimeIter);
+	}
+	else {
+		assert(playerTimeIter != g_TimeSet.end());
+	}
+
+	g_TimeSet.insert({ g_Time, player->uiID });
+	player->lastEchoTime = g_Time;
+#else
+	player->lastEchoTime = g_Time;
+#endif
+}
+
+//////////////////////////////
 // 캐릭터 생성
 //////////////////////////////
 stPoint GetRandomPosition() {
@@ -847,16 +868,6 @@ stPoint GetRandomPosition() {
 	//srand(time(NULL));
 	pos.usX = (rand() % (dfRANGE_MOVE_RIGHT - dfRANGE_MOVE_LEFT - 1)) + dfRANGE_MOVE_LEFT + 1;
 	pos.usY = (rand() % (dfRANGE_MOVE_BOTTOM - dfRANGE_MOVE_TOP - 1)) + dfRANGE_MOVE_TOP + 1;
-
-	// Test
-	//pos.usX = rand(); 
-	//std::cout << "before posX: " << pos.usX << std::endl;
-	//pos.usX %= (64 * dfGridCell_Col);
-	//std::cout << "after  posX: " << pos.usX << std::endl;
-	//pos.usY = rand(); 
-	//pos.usY %= (64 * dfGridCell_Row);
-
-
 	return pos;
 }
 void CreateFighter(HostID hostID) {
@@ -864,7 +875,7 @@ void CreateFighter(HostID hostID) {
 	stObjectInfo* newObject = new stObjectInfo();
 #endif //  DEFAULT_POOL
 #ifdef JINI_POOL
-	stObjectInfo* newObject = reinterpret_cast<stObjectInfo*>(ObjectPool.AllocMem());
+	stObjectInfo* newObject = reinterpret_cast<stObjectInfo*>(g_ObjectPool.AllocMem());
 #endif // JINI_POOL
 	newObject->uiID = hostID;
 	newObject->stPos = GetRandomPosition();
@@ -894,22 +905,23 @@ void CreateFighter(HostID hostID) {
 	//std::cout << "[CREATE] S(" << newObject->stPos.usX << ", " << newObject->stPos.usY << ")" << std::endl;
 
 	// 전역 타이머로 초기화
-	newObject->lastEchoTime = gTime;
-	gTimeMap.insert({ gTime, hostID });
+	newObject->lastEchoTime = g_Time;
+	//g_TimeMap.insert({ g_Time, hostID });
+	g_TimeSet.insert({ g_Time, hostID });	// 부호를 변경하여 삽입, 시간 기준 오름차순 정렬
 
 	BYTE bodyLen = sizeof(newObject->uiID) + sizeof(newObject->byDir) + sizeof(newObject->stPos) + sizeof(newObject->byHP);
 	g_Proxy.CRT_CHARACTER(newObject->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_CRT_CHARACTER, newObject->uiID, newObject->byDir, newObject->stPos.usX, newObject->stPos.usY, newObject->byHP);
 
-	if (gClientMap.find(hostID) == gClientMap.end()) {
-		gClientMap.insert({ hostID, newObject });
+	if (g_ClientMap.find(hostID) == g_ClientMap.end()) {
+		g_ClientMap.insert({ hostID, newObject });
 
 #ifdef DUMB_SPACE_DIV
 		FowardCRTMsg(newObject);
 		InsertToGrid(newObject->stPos.usY, newObject->stPos.usX, hostID);
 #endif
 #ifdef FIXED_GRID_SPACE_DIV
-		ForwardCRTMsg(newObject, &gGrid);
-		gGrid.Add(newObject);
+		ForwardCRTMsg(newObject, &g_Grid);
+		g_Grid.Add(newObject);
 #endif
 	}
 	else {
@@ -917,8 +929,8 @@ void CreateFighter(HostID hostID) {
 	}
 }
 void DeleteFighter(HostID hostID, bool netcoreSide) {
-	if (gDeleteClientSet.find(hostID) == gDeleteClientSet.end()) {
-		gDeleteClientSet.insert({ hostID, netcoreSide });
+	if (g_DeleteClientSet.find(hostID) == g_DeleteClientSet.end()) {
+		g_DeleteClientSet.insert({ hostID, netcoreSide });
 	}
 }
 
@@ -927,11 +939,15 @@ void DeleteFighter(HostID hostID, bool netcoreSide) {
 //////////////////////////////
 void MoveFigter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y) {
 	// 캐릭터가 죽기 전 move 메시지가 전송됨을 확인(추측)
-	if (gClientMap.find(hostID) == gClientMap.end()) {
+
+	auto playerIter = g_ClientMap.find(hostID);
+	if (playerIter == g_ClientMap.end()) {
+		assert(playerIter != g_ClientMap.end());
 		return;
 	}
+	stObjectInfo* player = playerIter->second;
+	ResetTime(player);
 
-	stObjectInfo* player = gClientMap[hostID];
 	player->byDir = Direction;
 	player->bMoveFlag = true;
 	//player->bFirstMoveFlag = true;
@@ -952,7 +968,7 @@ void MoveFigter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y) {
 			DeleteFromGrid(player->stPos.usY, player->stPos.usX, player->uiID);
 #endif
 #ifdef FIXED_GRID_SPACE_DIV
-			gGrid.Delete(player);
+			g_Grid.Delete(player);
 #endif	
 
 			stPoint beforePos = player->stPos;
@@ -964,8 +980,8 @@ void MoveFigter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y) {
 			FowardCrtDelMsgByMove(player, beforePos);
 #endif
 #ifdef FIXED_GRID_SPACE_DIV
-			GridResetInterestSpace(beforePos, player, &gGrid, false);
-			gGrid.Add(player);
+			GridResetInterestSpace(beforePos, player, &g_Grid, false);
+			g_Grid.Add(player);
 #endif 
 		}
 	}
@@ -979,16 +995,20 @@ void MoveFigter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y) {
 	ForwardMsgToNear(player, FightGameS2C::RPC_MOVE_START);
 #endif
 #ifdef FIXED_GRID_SPACE_DIV
-	ForwardMsgToNear(player, &gGrid, FightGameS2C::RPC_MOVE_START);
+	ForwardMsgToNear(player, &g_Grid, FightGameS2C::RPC_MOVE_START);
 #endif 
 }
 void StopFigther(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y) {
 	// 캐릭터가 죽기 전 move 메시지가 전송됨을 확인(추측)
-	if (gClientMap.find(hostID) == gClientMap.end()) {
+	
+	auto playerIter = g_ClientMap.find(hostID);
+	if (playerIter == g_ClientMap.end()) {
+		assert(playerIter != g_ClientMap.end());
 		return;
 	}
+	stObjectInfo* player = playerIter->second;
+	ResetTime(player);
 
-	stObjectInfo* player = gClientMap[hostID];
 	player->byDir = Direction;
 	player->bMoveFlag = false;
 
@@ -1008,7 +1028,7 @@ void StopFigther(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y) {
 			DeleteFromGrid(player->stPos.usY, player->stPos.usX, player->uiID);
 #endif
 #ifdef FIXED_GRID_SPACE_DIV
-			gGrid.Delete(player);
+			g_Grid.Delete(player);
 #endif	
 
 			stPoint beforePos = player->stPos;
@@ -1020,8 +1040,8 @@ void StopFigther(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y) {
 			FowardCrtDelMsgByMove(player, beforePos);
 #endif
 #ifdef FIXED_GRID_SPACE_DIV
-			GridResetInterestSpace(beforePos, player, &gGrid, false);
-			gGrid.Add(player);
+			GridResetInterestSpace(beforePos, player, &g_Grid, false);
+			g_Grid.Add(player);
 #endif 
 		}
 	}
@@ -1035,7 +1055,7 @@ void StopFigther(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y) {
 	ForwardMsgToNear(player, FightGameS2C::RPC_MOVE_STOP);
 #endif
 #ifdef FIXED_GRID_SPACE_DIV
-	ForwardMsgToNear(player, &gGrid, FightGameS2C::RPC_MOVE_STOP);
+	ForwardMsgToNear(player, &g_Grid, FightGameS2C::RPC_MOVE_STOP);
 #endif
 }
 
@@ -1044,11 +1064,15 @@ void StopFigther(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y) {
 //////////////////////////////
 void AttackFighter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y, enAttackType atkType) {
 	// 캐릭터가 죽기 전 move 메시지가 전송됨을 확인(추측)
-	if (gClientMap.find(hostID) == gClientMap.end()) {
+	
+	auto playerIter = g_ClientMap.find(hostID);
+	if (playerIter == g_ClientMap.end()) {
+		assert(playerIter != g_ClientMap.end());
 		return;
 	}
+	stObjectInfo* player = playerIter->second;
+	ResetTime(player);
 
-	stObjectInfo* player = gClientMap[hostID];
 	player->byDir = Direction;
 
 	// 좌표가 틀어지면 클라이언트를 끊는 것이 아니라 Sync를 맞춘다.
@@ -1063,7 +1087,7 @@ void AttackFighter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y, enAtta
 			DeleteFromGrid(player->stPos.usY, player->stPos.usX, player->uiID);
 #endif
 #ifdef FIXED_GRID_SPACE_DIV
-			gGrid.Delete(player);
+			g_Grid.Delete(player);
 #endif	
 
 			stPoint beforePos = player->stPos;
@@ -1075,8 +1099,8 @@ void AttackFighter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y, enAtta
 			FowardCrtDelMsgByMove(player, beforePos);
 #endif
 #ifdef FIXED_GRID_SPACE_DIV
-			GridResetInterestSpace(beforePos, player, &gGrid, false);
-			gGrid.Add(player);
+			GridResetInterestSpace(beforePos, player, &g_Grid, false);
+			g_Grid.Add(player);
 #endif 
 		}
 	}
@@ -1092,7 +1116,7 @@ void AttackFighter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y, enAtta
 	atkWork.usX = player->stPos.usX;
 	atkWork.usY = player->stPos.usY;
 	atkWork.byType = atkType;
-	AtkWorkQueue.push(atkWork);
+	g_AtkWorkQueue.push(atkWork);
 
 	// 주변 클라이언트에 ATTACK 메시지 포워딩
 	switch (atkType) {
@@ -1101,7 +1125,7 @@ void AttackFighter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y, enAtta
 		ForwardMsgToNear(player, FightGameS2C::RPC_ATTACK1);
 #endif
 #ifdef FIXED_GRID_SPACE_DIV
-		ForwardMsgToNear(player, &gGrid, FightGameS2C::RPC_ATTACK1);
+		ForwardMsgToNear(player, &g_Grid, FightGameS2C::RPC_ATTACK1);
 #endif
 		break;
 	}
@@ -1110,7 +1134,7 @@ void AttackFighter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y, enAtta
 		ForwardMsgToNear(player, FightGameS2C::RPC_ATTACK2);
 #endif
 #ifdef FIXED_GRID_SPACE_DIV
-		ForwardMsgToNear(player, &gGrid, FightGameS2C::RPC_ATTACK2);
+		ForwardMsgToNear(player, &g_Grid, FightGameS2C::RPC_ATTACK2);
 #endif
 		break;
 	}
@@ -1119,7 +1143,7 @@ void AttackFighter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y, enAtta
 		ForwardMsgToNear(player, FightGameS2C::RPC_ATTACK3);
 #endif
 #ifdef FIXED_GRID_SPACE_DIV
-		ForwardMsgToNear(player, &gGrid, FightGameS2C::RPC_ATTACK3);
+		ForwardMsgToNear(player, &g_Grid, FightGameS2C::RPC_ATTACK3);
 #endif
 		break;
 	}
@@ -1128,49 +1152,28 @@ void AttackFighter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y, enAtta
 
 void ReceiveEcho(HostID hostID, uint32_t time)
 {
-	//std::cout << "[Echo] hostID: " << hostID << ", time: " << time << std::endl;
-	//time_t t = time;
-	//struct tm ltm;
-	//localtime_s(&ltm, &t);
-	//cout << "year: " << ltm.tm_year + 1900 << endl;
-	//cout << "month: " << ltm.tm_mon + 1 << endl;
-	//cout << "day: " << ltm.tm_mday << endl;
-	//cout << "hour: " << ltm.tm_hour << endl;
-	//cout << "min: " << ltm.tm_min << endl;
-	//cout << "sec: " << ltm.tm_sec << endl;
 	BYTE bodyLen = sizeof(time);
 	g_Proxy.ECHO(hostID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_ECHO, time);
 
-	// 타이머 갱신
-	//if (gClientMap.find(hostID) != gClientMap.end()) {
-	//	stObjectInfo* client = gClientMap[hostID];
-	//	time_t beforeTime = client->lastEchoTime;
-	//	if (beforeTime != gTime) {
-	//		auto rangeIter = gTimeMap.equal_range(beforeTime);
-	//		for (auto iter = rangeIter.first; iter != rangeIter.second; iter++) {
-	//			if (iter->second == hostID) {
-	//				gTimeMap.erase(iter);
-	//				break;
-	//			}
-	//		}
-	//
-	//		client->lastEchoTime = gTime;
-	//		gTimeMap.insert({gTime, hostID});
-	//	}
-	//
-	//}
+	auto playerIter = g_ClientMap.find(hostID);
+	if (playerIter != g_ClientMap.end()) {
+		ResetTime(playerIter->second);
+	}
+	else {
+		assert(playerIter != g_ClientMap.end());
+	}
 }
 
 //////////////////////////////
 // Batch Process
 //////////////////////////////
 void BatchDeleteClientWork() {
-	for (auto delCleint : gDeleteClientSet) {
+	for (auto delCleint : g_DeleteClientSet) {
 		HostID hostID = delCleint.first;
 		bool netcoreSide = delCleint.second;
 
-		if (gClientMap.find(hostID) != gClientMap.end()) {
-			stObjectInfo* client = gClientMap[hostID];
+		if (g_ClientMap.find(hostID) != g_ClientMap.end()) {
+			stObjectInfo* client = g_ClientMap[hostID];
 
 			// 코어에 연결 종료 요청
 			if (!netcoreSide) {
@@ -1183,24 +1186,25 @@ void BatchDeleteClientWork() {
 			DeleteFromGrid(client->stPos.usY, client->stPos.usX, client->uiID);
 #endif
 #ifdef FIXED_GRID_SPACE_DIV
-			ForwardMsgToNear(client, &gGrid, FightGameS2C::RPC_DEL_CHARACTER);
-			gGrid.Delete(client);
+			ForwardMsgToNear(client, &g_Grid, FightGameS2C::RPC_DEL_CHARACTER);
+			g_Grid.Delete(client);
 #endif 
 
 #ifdef DEFAULT_POOL
 			delete client;
 #endif // DEFAULT_POOL
 #ifdef JINI_POOL
-			ObjectPool.ReturnMem(reinterpret_cast<BYTE*>(client));
+			g_ObjectPool.ReturnMem(reinterpret_cast<BYTE*>(client));
 #endif // JINI_POOL
 
-			gClientMap.erase(hostID);
+			g_ClientMap.erase(hostID);
 		}
-		else {
-			ERROR_EXCEPTION_WINDOW(L"BatchDeleteClientWork", L"gClientMap.find(hostID) == gClientMap.end()");
-		}
+		//else {
+		//	ERROR_EXCEPTION_WINDOW(L"BatchDeleteClientWork", L"gClientMap.find(hostID) == gClientMap.end()");
+		//}
+		// => 위 분기가 발생하는 것이 잘못된 흐름인가?
 	}
-	gDeleteClientSet.clear();
+	g_DeleteClientSet.clear();
 }
 void AttackWork(HostID atkerID, HostID targetID, enAttackType atkType) {
 
@@ -1217,9 +1221,9 @@ void AttackWork(HostID atkerID, HostID targetID, enAttackType atkType) {
 	break;
 	}
 
-	if (gClientMap.find(targetID) != gClientMap.end() && gClientMap.find(atkerID) != gClientMap.end()) {
-		stObjectInfo* attacker = gClientMap[atkerID];
-		stObjectInfo* target = gClientMap[targetID];
+	if (g_ClientMap.find(targetID) != g_ClientMap.end() && g_ClientMap.find(atkerID) != g_ClientMap.end()) {
+		stObjectInfo* attacker = g_ClientMap[atkerID];
+		stObjectInfo* target = g_ClientMap[targetID];
 		if (target->byHP <= damage) {
 			// 죽음
 			target->byHP = 0;
@@ -1233,7 +1237,7 @@ void AttackWork(HostID atkerID, HostID targetID, enAttackType atkType) {
 		ForwardDmgMsg(attacker, target);
 #endif
 #ifdef FIXED_GRID_SPACE_DIV
-		ForwardDmgMsg(attacker, target, &gGrid);
+		ForwardDmgMsg(attacker, target, &g_Grid);
 #endif
 	}
 	else {
@@ -1241,9 +1245,9 @@ void AttackWork(HostID atkerID, HostID targetID, enAttackType atkType) {
 	}
 }
 void BatchAttackWork() {
-	while (!AtkWorkQueue.empty()) {
-		stAttackWork& atkWork = AtkWorkQueue.front();
-		AtkWorkQueue.pop();
+	while (!g_AtkWorkQueue.empty()) {
+		stAttackWork& atkWork = g_AtkWorkQueue.front();
+		g_AtkWorkQueue.pop();
 
 		int32 atkRangeY = 0;
 		int32 atkRangeX = 0;
@@ -1306,7 +1310,7 @@ void BatchAttackWork() {
 
 		for (uint16 cy = atkRangeTop / dfGridCell_Length; cy <= atkRangeBottom / dfGridCell_Length; cy++) {
 			for (uint16 cx = atkRangeLeft / dfGridCell_Length; cx <= atkRangeRight / dfGridCell_Length; cx++) {
-				for (stObjectInfo* target = gGrid.cells[cy][cx]; target != nullptr; target = target->nextGridObj) {
+				for (stObjectInfo* target = g_Grid.cells[cy][cx]; target != nullptr; target = target->nextGridObj) {
 					if (atkWork.uiID != target->uiID) {
 						if (atkRangeTop <= target->stPos.usY && target->stPos.usY <= atkRangeBottom && atkRangeLeft <= target->stPos.usX && target->stPos.usX <= atkRangeRight) {
 							AttackWork(atkWork.uiID, target->uiID, atkWork.byType);
@@ -1322,7 +1326,7 @@ void BatchMoveWork(uint16 loopDelta) {
 	if (loopDelta <= 0) {
 		return;
 	}
-	for (auto iter : gClientMap) {
+	for (auto iter : g_ClientMap) {
 		stObjectInfo* object = iter.second;
 		if (object->bMoveFlag) {
 			//if (object->bFirstMoveFlag) {
@@ -1334,7 +1338,7 @@ void BatchMoveWork(uint16 loopDelta) {
 			DeleteFromGrid(object->stPos.usY, object->stPos.usX, object->uiID);
 #endif
 #ifdef FIXED_GRID_SPACE_DIV
-			gGrid.Delete(object);
+			g_Grid.Delete(object);
 #endif	
 			stPoint beforePos = object->stPos;
 
@@ -1455,18 +1459,74 @@ void BatchMoveWork(uint16 loopDelta) {
 			FowardCrtDelMsgByMove(object, beforePos);
 #endif
 #ifdef FIXED_GRID_SPACE_DIV
-			GridResetInterestSpace(beforePos, object, &gGrid, true);
-			gGrid.Add(object);
+			GridResetInterestSpace(beforePos, object, &g_Grid, true);
+			g_Grid.Add(object);
 #endif 
 		}
 	}
 }
 
 void BatchTimeOutCheck() {
-	for (auto iter = gTimeMap.begin(); iter != gTimeMap.end(); iter++) {
-		if (iter->first + 30 >= gTime) {
-			// 삭제 처리...
-			// linger 옵션 설정
+	//SLEEP_TIME_MS;
+	// 1000ms / SLEEP_TIME_MS = N
+	// N 번에 한번 씩 갱신
+
+	static uint16 s_TimeCheckDuration = 1000 / SLEEP_TIME_MS;
+	static time_t s_LoopCnt = 0;
+
+	g_Time = time(NULL);
+	s_LoopCnt++;
+
+	if (s_LoopCnt % s_TimeCheckDuration == 0) {
+#if defined(TIME_SET)
+		for (auto iter = g_TimeSet.begin(); iter != g_TimeSet.end();) {
+			if (g_Time - iter->first > 30) {
+				DeleteFighter(iter->second);
+				iter = g_TimeSet.erase(iter);
+			}
+			else {
+				break;
+			}
 		}
+
+#else
+		static time_t s_MinLastTime = 0;
+
+		//cout << g_Time - s_MinLastTime << endl;
+		if (g_Time - s_MinLastTime > 30) {
+			s_MinLastTime = MAXLONGLONG;
+
+			// 탐색 시 30 초 미만의 시간 중 최대를 저장하고, 이를 초마다 카운팅 -> 30초가 넘어가면 for문 순회로, for문 전체 순회를 매초마다 하지 않도록 함.
+			for (auto iter = g_ClientMap.begin(); iter != g_ClientMap.end(); iter++) {
+				if (g_Time - iter->second->lastEchoTime > 30) {
+					DeleteFighter(iter->second->uiID);
+				}
+				else {
+					s_MinLastTime = min(s_MinLastTime, iter->second->lastEchoTime);
+				}
+			}
+
+			if (s_MinLastTime == MAXLONGLONG) {
+				s_MinLastTime = 0;
+			}
+		}
+#endif
 	}
+}
+
+void BatchPrintLog() {
+	static uint32 logTime = 0;
+	
+	if (logTime % 100 == 0) {
+		cout << "===================================" << endl;
+		cout << "캐릭터 수: " << g_ClientMap.size() << endl;
+		for (auto iter = g_TimeSet.begin(); iter != g_TimeSet.end(); iter++) {
+			if (logTime % 10 == 0) {
+				cout << "lastEchoTime: " << iter->first << ", hostID: " << iter->second << endl;
+			}
+		}
+		cout << "===================================" << endl;
+	}
+
+	logTime++;
 }

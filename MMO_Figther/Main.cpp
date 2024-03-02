@@ -13,9 +13,9 @@ void ConsoleLog() {
 	bool flag = false;
 	for (int y = 0; y <= dfRANGE_MOVE_BOTTOM; y++) {
 		for (int x = 0; x <= dfRANGE_MOVE_RIGHT; x++) {
-			if (gClientGrid[y][x] != nullptr) {
+			if (g_ClientGrid[y][x] != nullptr) {
 				flag = true;
-				stObjectInfo* objptr = gClientGrid[y][x];
+				stObjectInfo* objptr = g_ClientGrid[y][x];
 				while (objptr != nullptr) {
 					std::cout << "y: " << y << ", x: " << x << ", id: " << objptr->uiID << std::endl;
 					objptr = objptr->nextGridObj;
@@ -31,13 +31,11 @@ void ConsoleLog() {
 class FighterGameBatch : public JNetBatchProcess
 {
 	void BatchProcess() override {
-		// 전역 타이머 갱신
-		gTime = time(NULL);
-
-		//ConsoleLog();
+		BatchTimeOutCheck();
 		BatchAttackWork();
 		BatchDeleteClientWork();
 		BatchMoveWork();
+		BatchPrintLog();
 	}
 
 	void BatchProcess(uint16 g_LoopDelta) override {
@@ -46,13 +44,13 @@ class FighterGameBatch : public JNetBatchProcess
 			return;
 		}
 #endif
-		// 전역 타이머 갱신
-		gTime = time(NULL);
-
-		//ConsoleLog();
+		BatchTimeOutCheck();
 		BatchAttackWork();
 		BatchDeleteClientWork();
 		BatchMoveWork(g_LoopDelta);
+#if defined(CONSOLE_LOG)
+		BatchPrintLog();
+#endif
 	}
 };
 
@@ -149,7 +147,7 @@ void Init() {
 	std::cout << "Server Start!" << std::endl;
 
 	// 전역 타이머 작동 개시
-	gTime = time(NULL);
+	g_Time = time(NULL);
 
 	timeBeginPeriod(1);
 	g_LoopStart = clock();

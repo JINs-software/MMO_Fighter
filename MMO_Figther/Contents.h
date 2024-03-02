@@ -4,6 +4,7 @@
 #include <vector>
 #include <queue>
 #include <mutex>
+#include <cassert>
 #include <time.h>
 #include "Configuration.h"
 #include "GameObject.h"
@@ -15,12 +16,12 @@
 
 #include "JNetPool.h"
 
-extern std::map<HostID, stObjectInfo*> gClientMap;
-extern std::vector<std::vector<stObjectInfo*>> gClientGrid;
-extern std::map<HostID, bool> gDeleteClientSet;
-extern std::queue<stAttackWork> AtkWorkQueue;
+extern std::map<HostID, stObjectInfo*> g_ClientMap;
+extern std::vector<std::vector<stObjectInfo*>> g_ClientGrid;
+extern std::map<HostID, bool> g_DeleteClientSet;
+extern std::queue<stAttackWork> g_AtkWorkQueue;
 
-extern time_t gTime;
+extern time_t g_Time;
 
 //=========================
 // 무식한 방식의 공간 분할
@@ -49,7 +50,10 @@ void ForwardCRTMsg(stObjectInfo* object, Grid* grid);
 void ForwardDmgMsg(stObjectInfo* attacker, stObjectInfo* target, Grid* grid);
 void ForwardDELMsg(stObjectInfo* object, Grid* grid);
 
-
+//////////////////////////////
+// g_TimeSet 갱신
+//////////////////////////////
+void ResetTime(stObjectInfo* player);
 
 //////////////////////////////
 // 캐릭터 생성
@@ -83,3 +87,4 @@ void AttackWork(HostID atkerID, HostID targetID, enAttackType atkType);
 void BatchAttackWork();
 void BatchMoveWork(uint16 calibration = 0);
 void BatchTimeOutCheck();
+void BatchPrintLog();
