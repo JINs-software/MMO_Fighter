@@ -63,8 +63,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 #endif
 
         // Open Console
-        //AllocConsole();
-        //freopen("CONOUT$", "wt", stdout);
+        AllocConsole();
+        g_Console = freopen("CONOUT$", "wt", stdout);
 
         // 애플리케이션 초기화를 수행합니다:
         if (!InitInstance(hInstance, nCmdShow))
@@ -72,8 +72,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             //FreeConsole();
             return FALSE;
         }
-
-        //FreeConsole();
 
         HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MMOFIGTERMONT));
 
@@ -89,6 +87,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             }
         }
 
+        FreeConsole();
         return (int)msg.wParam;
     }
 }
@@ -153,40 +152,34 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    // Draw
    HDC hdc = GetDC(hWnd);
    GetClientRect(hWnd, &g_MemDC_Rect);
-   //GetClientRect(hWnd, &grid_MemDC_Rect);
 
    g_hMemDC_Bitmap = CreateCompatibleBitmap(hdc, g_MemDC_Rect.right, g_MemDC_Rect.bottom);
    g_hMemDC = CreateCompatibleDC(hdc);
    g_hMemDC_BitmapOld = (HBITMAP)SelectObject(g_hMemDC, g_hMemDC_Bitmap);
 
-   //grid_hMemDC_Bitmap = CreateCompatibleBitmap(hdc, grid_MemDC_Rect.right, grid_MemDC_Rect.bottom);
-   //grid_hMemDC = CreateCompatibleDC(hdc);
-   //grid_hMemDC_BitmapOld = (HBITMAP)SelectObject(grid_hMemDC, grid_hMemDC_Bitmap);
-
    ReleaseDC(hWnd, hdc);
 
    // Grid
-   gGrid.SetGridCell(64, 100, 100);
-   //UpdateGridBackground(hWnd);
+   g_Grid.SetGridCell(64, 100, 100);
 
    // Capture
    if (MyDialogClass::loopBackMode) {
-       if (!servCapture.Init(serverIP, true)) {
+       if (!g_ServCapture.Init(serverIP, true)) {
            MessageBox(NULL, L"루프백 설정 오류", L"패킷 캡처 설정 오류", MB_OK | MB_ICONINFORMATION);
            return FALSE;
        }
    }
    else {
-       if (!servCapture.Init(serverIP)) {
+       if (!g_ServCapture.Init(serverIP)) {
            MessageBox(NULL, L"모니터링 노드와 연결되어 있지 않은 서버입니다.", L"패킷 캡처 설정 오류", MB_OK | MB_ICONINFORMATION);
            return FALSE;
        }
    }
-   servCapture.RunServerCapture_MMO_Fighter(serverIP, listenPort);
-   playerManager.SetCapture(&servCapture);
-   playerManager.SetServerAddress(serverIP, listenPort);
-   playerManager.RunProcCapture();
-   playerManager.RunProcFrameMove(WaitMS);
+   g_ServCapture.RunServerCapture_MMO_Fighter(serverIP, listenPort);
+   g_PlayerManager.SetCapture(&g_ServCapture);
+   g_PlayerManager.SetServerAddress(serverIP, listenPort);
+   g_PlayerManager.RunProcCapture();
+   g_PlayerManager.RunProcFrameMove(WaitMS);
 
    // 타이머
    //SetTimer(hWnd, timer120ms, 120, NULL);
@@ -278,8 +271,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             //SetThreadPriority(GetCurrentThread(), +1);
             // 메모리 DC 클리어
             PatBlt(g_hMemDC, 0, 0, g_MemDC_Rect.right, g_MemDC_Rect.bottom, WHITENESS);
-            gGrid.DrawGrid(g_hMemDC, g_MemDC_Rect.right, g_MemDC_Rect.bottom);
-            gGrid.DrawPlayer(g_hMemDC, g_MemDC_Rect.right, g_MemDC_Rect.bottom, &playerManager.players);// , & pMgr.playersMtx);
+            g_Grid.DrawGrid(g_hMemDC, g_MemDC_Rect.right, g_MemDC_Rect.bottom);
+            g_Grid.DrawPlayer(g_hMemDC, g_MemDC_Rect.right, g_MemDC_Rect.bottom, &g_PlayerManager.players);// , & pMgr.playersMtx);
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
             BitBlt(hdc, 0, 0, g_MemDC_Rect.right, g_MemDC_Rect.bottom, g_hMemDC, 0, 0, SRCCOPY);
@@ -291,7 +284,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         int x = LOWORD(lParam);
         int y = HIWORD(lParam);
-        gGrid.SelectPlayer(x, y, playerManager.players);
+        g_Grid.SelectPlayer(x, y, g_PlayerManager.players);
+    }
+    break;
+    case WM_RBUTTONDOWN:
+    {
+        int x = LOWORD(lParam);
+        int y = HIWORD(lParam);
+        g_Grid.SelectPlayer(x, y, g_PlayerManager.players, true);
     }
     break;
     case WM_MOUSEWHEEL:
@@ -302,9 +302,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         int delta = GET_WHEEL_DELTA_WPARAM(wParam);
         // 휠을 위로 굴리면 격자 확대
-        if (delta > 0) { gGrid.cellSize = 100 < gGrid.cellSize + 5 ? 100 : gGrid.cellSize + 5; }
+        if (delta > 0) { g_Grid.cellSize = 100 < g_Grid.cellSize + 5 ? 100 : g_Grid.cellSize + 5; }
         // 휠을 아래로 굴리면 격자 축소 (최소 크기는 5)
-        else { gGrid.cellSize = 5 > gGrid.cellSize - 5 ? 5 : gGrid.cellSize - 5; }
+        else { g_Grid.cellSize = 5 > g_Grid.cellSize - 5 ? 5 : g_Grid.cellSize - 5; }
 
         // 윈도우를 다시 그리도록 강제
         InvalidateRect(hWnd, NULL, FALSE);
@@ -316,35 +316,35 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         switch (wParam) {
         case 'W':
             flag = true;
-            gGrid.MoveUp();
+            g_Grid.MoveUp();
             break;
         case 'w':
             flag = true;
-            gGrid.MoveUp();
+            g_Grid.MoveUp();
             break;
         case 'A':
             flag = true;
-            gGrid.MoveLeft();
+            g_Grid.MoveLeft();
             break;
         case 'a':
             flag = true;
-            gGrid.MoveLeft();
+            g_Grid.MoveLeft();
             break;
         case 'S':
             flag = true;
-            gGrid.MoveDown();
+            g_Grid.MoveDown();
             break;
         case 's':
             flag = true;
-            gGrid.MoveDown();
+            g_Grid.MoveDown();
             break;
         case 'D':
             flag = true;
-            gGrid.MoveRight();
+            g_Grid.MoveRight();
             break;
         case 'd':
             flag = true;
-            gGrid.MoveRight();
+            g_Grid.MoveRight();
             break;
         }
 
@@ -371,8 +371,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     }
     break;
     case WM_DESTROY:
-        servCapture.stopCapture();
-        playerManager.StopCapture();
+        g_ServCapture.stopCapture();
+        g_PlayerManager.stopProcess();
 
         SelectObject(g_hMemDC, g_hMemDC_BitmapOld);
         DeleteObject(g_hMemDC);

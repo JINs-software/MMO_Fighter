@@ -63,6 +63,7 @@ void PlayerManager::ProcPacket(stCapturedPacket packetBundle)
 			}
 		}
 	}
+	// 루프 - 백 모드라면, port 번호로 S->C인지 C->S인지 식별
 	else {
 		if (htons(serverPort) == packetBundle.tcpHdr.source) {
 			StoC = true;
@@ -86,8 +87,8 @@ void PlayerManager::ProcPacket(stCapturedPacket packetBundle)
 			if (port != 0) {
 				if (players.find(hostID, player)) {
 					if (player->hostID != hostID) {
+						assert(player->hostID == hostID);
 						std::cout << "player->hostID != hostID !" << std::endl;
-						assert(false);
 					}
 				}
 			}
@@ -97,7 +98,89 @@ void PlayerManager::ProcPacket(stCapturedPacket packetBundle)
 	// CreateMsg 전이기에 등록된 포트가 없을 수 있다. 이러한 경우 그냥 플레이어에 대한 개별 락 없이 CreateMsg를 처리하도록 유도한다.
 	// 만약 플레이어 정보가 있다면 락을 건다.
 	bool closeFlag = false;
-	if (player != nullptr) {
+	if (player == nullptr) {
+		JBuffer temp(BUFF_SIZE);
+		temp.Enqueue(packetBundle.msg, packetBundle.msgLen);
+		BYTE msgCode;
+		BYTE msgLen;
+		BYTE msgID;
+		if (temp.GetUseSize() < sizeof(msgCode) + sizeof(msgLen) + sizeof(msgID)) {
+			// 헤더 메시지 길이 부족
+			return;
+		}
+		temp.Peek(0, reinterpret_cast<BYTE*>(&msgCode), sizeof(msgCode));
+		temp.Peek(1, reinterpret_cast<BYTE*>(&msgLen), sizeof(msgLen));
+		temp.Peek(2, reinterpret_cast<BYTE*>(&msgID), sizeof(msgID));
+		if (msgCode != dfPACKET_CODE) {
+			// 코드 불일치
+			return;
+		}
+		if (temp.GetUseSize() < sizeof(msgCode) + sizeof(msgLen) + sizeof(msgID) + msgLen) {
+			// 바디 메시지 길이 부족
+			return;
+		}
+
+		//if (msgID == dfPACKET_SC_CREATE_MY_CHARACTER) {
+		//	player = AllocPlayer();
+		//	assert(player != nullptr);
+		//}
+		//else {
+		//	assert(msgID == dfPACKET_SC_CREATE_MY_CHARACTER);
+		//}
+
+		switch (msgID) {
+		case dfPACKET_SC_CREATE_MY_CHARACTER:
+		{
+			BYTE byCode;
+			temp >> byCode;
+			BYTE bySize;
+			temp >> bySize;
+			BYTE byType;
+			temp >> byType;
+			uint32_t ID;
+			temp >> ID;
+			BYTE Direction;
+			temp >> Direction;
+			uint16_t X;
+			temp >> X;
+			uint16_t Y;
+			temp >> Y;
+			BYTE HP;
+			temp >> HP;
+			CreatePlayer(ID, { X, Y }, packetBundle.tcpHdr.dest, HP);
+		}
+		break;
+		case dfPACKET_SC_CREATE_OTHER_CHARACTER:
+		{
+			BYTE byCode;
+			temp >> byCode;
+			BYTE bySize;
+			temp >> bySize;
+			BYTE byType;
+			temp >> byType;
+			uint32_t ID;
+			temp >> ID;
+			BYTE Direction;
+			temp >> Direction;
+			uint16_t X;
+			temp >> X;
+			uint16_t Y;
+			temp >> Y;
+			BYTE HP;
+			temp >> HP;
+			CreatePlayer(ID, { X, Y }, packetBundle.tcpHdr.dest, HP);
+		}
+		break;
+		default:
+		{	
+		}
+		break;
+		}
+
+		return;
+	}
+	//if (player != nullptr) {
+	else {
 		//WOA_Player_Lock(player);
 
 		if (packetBundle.tcpHdr.fin) {
@@ -127,12 +210,17 @@ void PlayerManager::ProcPacket(stCapturedPacket packetBundle)
 	//////////////////// 포트는 바로 삭제 시도
 	if (closeFlag) {
 		playerPort.erase(port);
+		players.erase(hostID);
 	}
 	//////////////////// 
 	else {
 	//if (!closeFlag) {
-		JBuffer jbuff(packetBundle.msgLen);
+		//JBuffer jbuff(packetBundle.msgLen);
+		//jbuff.Enqueue(packetBundle.msg, packetBundle.msgLen);
+
+		JBuffer& jbuff = player->ringBuff;
 		jbuff.Enqueue(packetBundle.msg, packetBundle.msgLen);
+
 		while (true) {
 			BYTE msgCode;
 			BYTE msgLen;
@@ -142,13 +230,13 @@ void PlayerManager::ProcPacket(stCapturedPacket packetBundle)
 				break;
 			}
 			jbuff.Peek(0, reinterpret_cast<BYTE*>(&msgCode), sizeof(msgCode));
+			jbuff.Peek(1, reinterpret_cast<BYTE*>(&msgLen), sizeof(msgLen));
+			jbuff.Peek(2, reinterpret_cast<BYTE*>(&msgID), sizeof(msgID));
+
 			if (msgCode != dfPACKET_CODE) {
 				// 코드 불일치
 				break;
 			}
-			jbuff.Peek(1, reinterpret_cast<BYTE*>(&msgLen), sizeof(msgLen));
-			jbuff.Peek(2, reinterpret_cast<BYTE*>(&msgID), sizeof(msgID));
-
 			if (jbuff.GetUseSize() < sizeof(msgCode) + sizeof(msgLen) + sizeof(msgID) + msgLen) {
 				// 바디 메시지 길이 부족
 				break;
@@ -216,6 +304,9 @@ void PlayerManager::ProcPacket(stCapturedPacket packetBundle)
 				//MovePlayerClnt(ID,)
 				if (player != nullptr) {
 					MovePlayerClnt(hostID, { X, Y }, Direction);
+					if (player->logOn) {
+						std::cout << "hostID: " << player->hostID << " (C->S) dfPACKET_CS_MOVE_START" << std::endl;
+					}
 				}
 			}
 			break;
@@ -235,6 +326,9 @@ void PlayerManager::ProcPacket(stCapturedPacket packetBundle)
 				jbuff >> Y;
 				if (player != nullptr) {
 					StopPlayerClnt(hostID, { X, Y });
+					if (player->logOn) {
+						std::cout << "hostID: " << player->hostID << " (C->S) dfPACKET_CS_MOVE_STOP" << std::endl;
+					}
 				}
 			}
 			break;
@@ -273,6 +367,40 @@ void PlayerManager::ProcPacket(stCapturedPacket packetBundle)
 				SyncPlayer(ID, { X, Y });
 			}
 			break;
+			case dfPACKET_CS_ECHO:
+			{
+				BYTE byCode;
+				jbuff >> byCode;
+				BYTE bySize;
+				jbuff >> bySize;
+				BYTE byType;
+				jbuff >> byType;
+				uint32_t Time;
+				jbuff >> Time;
+				if (player != nullptr) {
+					if (player->logOn) {
+						std::cout << "hostID: " << player->hostID << " (C->S) dfPACKET_CS_ECHO, time: " << Time << std::endl;
+					}
+				}
+			}
+			break;
+			case dfPACKET_SC_ECHO:
+			{
+				BYTE byCode;
+				jbuff >> byCode;
+				BYTE bySize;
+				jbuff >> bySize;
+				BYTE byType;
+				jbuff >> byType;
+				uint32_t Time;
+				jbuff >> Time;
+				if (player != nullptr) {
+					if (player->logOn) {
+						std::cout << "hostID: " << player->hostID << " (S->C) dfPACKET_SC_ECHO, time: " << Time << std::endl;
+					}
+				}
+			}
+			break;
 			default:
 			{
 				jbuff.DirectMoveDequeueOffset(sizeof(msgCode) + sizeof(msgID) + sizeof(msgLen) + msgLen);
@@ -304,8 +432,10 @@ void PlayerManager::ProcCapture() {
 		//	//ProcPacketFront(capPack);
 		//}
 
-		stCapturedPacket capPack = capture->GetCapturedPacket();
-		ProcPacket(capPack);
+		std::pair<bool, stCapturedPacket> capPack = capture->GetCapturedPacket();
+		if (capPack.first) {
+			ProcPacket(capPack.second);
+		}
 	}
 }
 

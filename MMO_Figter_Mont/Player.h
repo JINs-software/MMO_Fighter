@@ -26,6 +26,9 @@ struct Point {
 
 struct Player
 {
+	BYTE internal_buff[BUFF_SIZE];
+	JBuffer ringBuff;
+
 	unsigned int hostID = 0;	// host id
 	Point servPoint = { 0, 0 };
 	Point clntPoint = { 0, 0 };
@@ -33,8 +36,10 @@ struct Player
 	BYTE byDir;
 	BYTE byHP;
 
+	bool binitFlag = false;
 	bool bMoveFlag = false;
 	bool focusOn = false;
+	bool logOn = false;
 	bool crtFlag = false;
 	bool finFlag = false;
 	bool rstSCFlag = false;
@@ -45,30 +50,31 @@ struct Player
 	// 락 변수
 	uint32 p_lock;
 
-	//JBuffer* buff;
+	//JBuffer* buf : f;
 
-	Player() {}
-	Player(unsigned int hostID, Point sp, Point cp, unsigned short pt, BYTE hp)
-		: hostID(hostID), servPoint(sp), clntPoint(cp), port(pt), byHP(hp), frameTimer(DEFAULT_TIMTER_SET),
-		bMoveFlag(false), focusOn(false), crtFlag(true), finFlag(false), rstSCFlag(false), rstCSFlag(false), p_lock(0)
-	{
-	}
+	Player() : ringBuff(BUFF_SIZE, internal_buff) {}
+	//Player(unsigned int hostID, Point sp, Point cp, unsigned short pt, BYTE hp)
+	//	: hostID(hostID), servPoint(sp), clntPoint(cp), port(pt), byHP(hp),
+	//	frameTimer(DEFAULT_TIMTER_SET),bMoveFlag(false), focusOn(false), logOn(false), crtFlag(true), finFlag(false), rstSCFlag(false), rstCSFlag(false), p_lock(0) {}
 	inline void Set(unsigned int hostID, Point sp, Point cp, unsigned short pt, BYTE hp) {
-		//hostID(hostID), servPoint(sp), clntPoint(cp), port(pt), byHP(hp), crtFlag(true), frameTimer(DEFAULT_TIMTER_SET)
-		this->hostID = hostID;
-		this->servPoint = sp;
-		this->clntPoint = cp;
-		this->port = pt;
-		this->byHP = hp;
-		this->frameTimer = DEFAULT_TIMTER_SET;
+		if (!binitFlag) {
+			this->hostID = hostID;
+			this->servPoint = sp;
+			this->clntPoint = cp;
+			this->port = pt;
+			this->byHP = hp;
+			this->frameTimer = DEFAULT_TIMTER_SET;
 
-		bMoveFlag = false;
-		focusOn = false;
-		crtFlag = true;
-		finFlag = false;
-		rstSCFlag = false;
-		rstCSFlag = false; 
-		p_lock = 0;
+			binitFlag = true;
+			bMoveFlag = false;
+			focusOn = false;
+			logOn = false;
+			crtFlag = true;
+			finFlag = false;
+			rstSCFlag = false;
+			rstCSFlag = false;
+			p_lock = 0;
+		}
 	}
 };
 
@@ -78,7 +84,11 @@ void WOA_Player_Unlock(Player* pp);
 
 struct PlayerManager {
 	ArpSpoofer* capture;
-	bool procFlag = false;
+
+	std::thread thCapture;
+	std::thread thFrameMove;
+
+	bool procFlag = true;
 	bool loopBackMode = false;
 	JiniPool playerPool;	// player 객체를 위한 풀
 	ThreadSafeUnorderedMap<unsigned int, Player*> players;
@@ -88,7 +98,17 @@ struct PlayerManager {
 	uint16_t serverPort;
 	//ThreadPool thPool;
 
+	uint16_t playerCnt = 0;
+
 	PlayerManager() : playerPool(sizeof(Player), MAXIM_PLAYER_NUM)/*, thPool(5)*/ {}
+	~PlayerManager() {
+		if (thCapture.joinable()) {
+			thCapture.join();
+		}
+		if (thFrameMove.joinable()) {
+			thFrameMove.join();
+		}
+	};
 
 	void SetCapture(ArpSpoofer* capture_) {
 		capture = capture_;
@@ -112,57 +132,72 @@ struct PlayerManager {
 	void ProcCapture();
 
 	void RunProcCapture() {
-		procFlag = true;
-		std::thread thCapture(&PlayerManager::ProcCapture, this);
-		thCapture.detach();
+		thCapture = std::thread(&PlayerManager::ProcCapture, this);
+		//thCapture.detach();
 	}
 	void RunProcFrameMove(BYTE loopMs) {
-		std::thread thFrameMove(&PlayerManager::FrameMove, this, loopMs);
-		thFrameMove.detach();
+		thFrameMove = std::thread(&PlayerManager::FrameMove, this, loopMs);
+		//thFrameMove.detach();
 	}
-	void StopCapture() {
+	void stopProcess() {
 		procFlag = false;
 	}
 
 	void FrameMove(BYTE loopDelta);
 
 	// S->C
-	void CreatePlayer(unsigned int hostID, Point sp, unsigned short port, BYTE hp) {
-		//playersMtx.lock();
-		//if (players.find(hostID) == players.end()) {
+	Player* AllocPlayer() {
 		Player* player;
-		if (!players.find(hostID, player)) {
-			//portMtx.lock();
-			if (!playerPort.find(port, hostID)) {
-				playerPort.erase(port);
-			}
-			//playerPort[port] = hostID;	// 중복된 키의 경우 값 갱신
-			playerPort.insert(port, hostID);
-			//portMtx.unlock();
+		player = (Player*)playerPool.AllocMem();
+		new (player) Player();
+		return player;
+	}
+	void CreatePlayer(unsigned int hostID, Point sp, unsigned short port, BYTE hp) {
+		Player* player = AllocPlayer();
+		assert(player != nullptr);
 
-			//players.insert(std::make_pair(hostID, Player(hostID, sp, sp, port, hp)));
-			//playerPort.insert(std::make_pair(port, hostID));
-			//std::cout << "CreatePlayer, id: " << hostID << ", port: " << port << std::endl;
+		player->Set(hostID, sp, sp, port, hp);
+		playerPort.insert(port, hostID);
+		players.insert(hostID, player);
 
-			Player* player = (Player*)playerPool.AllocMem();
-			player->Set(hostID, sp, sp, port, hp);
-			players.insert(hostID, player);
-		}
-		//else {
-		//	// CreatePlayer 요청이 들어왔지만 해당 id의 플레이어가 이미 존재하는 경우
-		//	// -> 객체를 삭제한다기보다 객체의 내용을 새로 갱신해주는 방식으로 ..
-		//
-		//	//players[hostID].servPoint = sp;
-		//	//WOA_Player_Lock(players[hostID]);
-		//	//players[hostID]->Set(hostID, sp, sp, port, hp);
-		//	////WOA_Player_Unlock(players[hostID]);
+		////playersMtx.lock();
+		////if (players.find(hostID) == players.end()) {
+		//Player* player;
+		//if (!players.find(hostID, player)) {
+		//	//portMtx.lock();
+		//	if (!playerPort.find(port, hostID)) {
+		//		playerPort.erase(port);
+		//	}
 		//	//playerPort[port] = hostID;	// 중복된 키의 경우 값 갱신
+		//	playerPort.insert(port, hostID);
+		//	//portMtx.unlock();
 		//
-		//	std::cout << "중복 ID 존재!!" << std::endl;
-		//	//assert(false);
+		//	//players.insert(std::make_pair(hostID, Player(hostID, sp, sp, port, hp)));
+		//	//playerPort.insert(std::make_pair(port, hostID));
+		//	//std::cout << "CreatePlayer, id: " << hostID << ", port: " << port << std::endl;
+		//
+		//	Player* player = (Player*)playerPool.AllocMem();
+		//	//player->Set(hostID, sp, sp, port, hp);
+		//	new (player) Player(hostID, sp, sp, port, hp);
+		//	players.insert(hostID, player);
+		//
+		//	playerCnt++;
 		//}
-		// ===> 서버에서는 특정 플레이어 주변의 플레이어만 관심을 같도록 범위 내 다른 플레이어들에 대한 Create/Delete를 빈번하게 발생시킨다.
-		//playersMtx.unlock();
+		////else {
+		////	// CreatePlayer 요청이 들어왔지만 해당 id의 플레이어가 이미 존재하는 경우
+		////	// -> 객체를 삭제한다기보다 객체의 내용을 새로 갱신해주는 방식으로 ..
+		////
+		////	//players[hostID].servPoint = sp;
+		////	//WOA_Player_Lock(players[hostID]);
+		////	//players[hostID]->Set(hostID, sp, sp, port, hp);
+		////	////WOA_Player_Unlock(players[hostID]);
+		////	//playerPort[port] = hostID;	// 중복된 키의 경우 값 갱신
+		////
+		////	std::cout << "중복 ID 존재!!" << std::endl;
+		////	//assert(false);
+		////}
+		//// ===> 서버에서는 특정 플레이어 주변의 플레이어만 관심을 같도록 범위 내 다른 플레이어들에 대한 Create/Delete를 빈번하게 발생시킨다.
+		////playersMtx.unlock();
 	}
 	//void DeletePlayer(unsigned int hostID) {
 	//	//playersMtx.lock();
@@ -198,9 +233,6 @@ struct PlayerManager {
 		//playersMtx.unlock();
 
 		Player* player;
-		if (players.find(hostID, player)) {
-			player->servPoint = sp;
-		}
 	}
 	void StopPlayerServ(unsigned int hostID, Point sp) {
 		//playersMtx.lock();

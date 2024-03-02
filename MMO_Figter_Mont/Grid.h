@@ -23,24 +23,26 @@ public:
 	int cellY;
 	std::vector<std::vector<Cell>> cells;
 
-	HBRUSH hBrushRed;// = CreateSolidBrush(RGB(255, 0, 0));
-	HBRUSH hBrushOrange;// = CreateSolidBrush(RGB(0xFF, 0x7F, 0));
-	HBRUSH hBrushPurple;// = CreateSolidBrush(RGB(0x8B, 0x0, 0xFF));
-	HBRUSH hBrushBlue;// = CreateSolidBrush(RGB(0, 0, 255));
-	HBRUSH hBrushGray;// = CreateSolidBrush(RGB(128, 128, 128));
-	HBRUSH hBrushBlack;// = CreateSolidBrush(RGB(0x0A, 0x0A, 0x0A));
+	HBRUSH hBrushRed;		// = CreateSolidBrush(RGB(255, 0, 0));
+	HBRUSH hBrushOrange;	// = CreateSolidBrush(RGB(0xFF, 0x7F, 0));
+	HBRUSH hBrushPurple;	// = CreateSolidBrush(RGB(0x8B, 0x0, 0xFF));
+	HBRUSH hBrushBrown;		
+	HBRUSH hBrushBlue;		// = CreateSolidBrush(RGB(0, 0, 255));
+	HBRUSH hBrushGray;		// = CreateSolidBrush(RGB(128, 128, 128));
+	HBRUSH hBrushBlack;		// = CreateSolidBrush(RGB(0x0A, 0x0A, 0x0A));
 
-	HBRUSH hBrushGreen0;// = CreateSolidBrush(RGB(0, 128, 0));
-	HBRUSH hBrushGreen1;// = CreateSolidBrush(RGB(50, 150, 50));
-	HBRUSH hBrushGreen2;// = CreateSolidBrush(RGB(100, 180, 100));
-	HBRUSH hBrushGreen3;// = CreateSolidBrush(RGB(150, 210, 150));
-	HBRUSH hBrushGreen4;// = CreateSolidBrush(RGB(200, 240, 200));
-	HBRUSH hBrushGreen5;// = CreateSolidBrush(RGB(250, 255, 250));
+	HBRUSH hBrushGreen0;	// = CreateSolidBrush(RGB(0, 128, 0));
+	HBRUSH hBrushGreen1;	// = CreateSolidBrush(RGB(50, 150, 50));
+	HBRUSH hBrushGreen2;	// = CreateSolidBrush(RGB(100, 180, 100));
+	HBRUSH hBrushGreen3;	// = CreateSolidBrush(RGB(150, 210, 150));
+	HBRUSH hBrushGreen4;	// = CreateSolidBrush(RGB(200, 240, 200));
+	HBRUSH hBrushGreen5;	// = CreateSolidBrush(RGB(250, 255, 250));
 
 	Grid() {
 		hBrushRed = CreateSolidBrush(RGB(255, 0, 0));
 		hBrushOrange = CreateSolidBrush(RGB(0xFF, 0x7F, 0));
 		hBrushPurple = CreateSolidBrush(RGB(0x8B, 0x0, 0xFF));
+		hBrushBrown = CreateSolidBrush(RGB(165, 42, 42));
 		hBrushBlue = CreateSolidBrush(RGB(0, 0, 255));
 		hBrushGray = CreateSolidBrush(RGB(128, 128, 128));
 		hBrushBlack = CreateSolidBrush(RGB(0x0A, 0x0A, 0x0A));
@@ -56,6 +58,7 @@ public:
 		DeleteObject(hBrushRed);
 		DeleteObject(hBrushOrange);
 		DeleteObject(hBrushPurple);
+		DeleteObject(hBrushBrown);
 		DeleteObject(hBrushBlue);
 		DeleteObject(hBrushGray);
 		DeleteObject(hBrushBlack);
@@ -82,24 +85,53 @@ public:
 		}
 	}
 
-	void SelectPlayer(int winX, int winY, ThreadSafeUnorderedMap<unsigned int, Player*>& players) {
+	void SelectPlayer(int winX, int winY, ThreadSafeUnorderedMap<unsigned int, Player*>& players, bool islogOn = false) {
 		//winX -= offsetX;
 		//winX /= ((double)cellSize / 64);
 		//winY -= offsetY;
 		//winY /= ((double)cellSize / 64);
 
-		for (auto iter = players.begin(); iter != players.end(); iter++) {
-			Player* player = iter->second;
-			int cX = player->clntPoint.X;
-			int cY = player->clntPoint.Y;
-			cX *= ((double)cellSize / 64);
-			cX += offsetX;
-			cY *= ((double)cellSize / 64);
-			cY += offsetY;
-			// Ellipse(hdc, cX - CILCLE_LEN, cY - CILCLE_LEN, cX + CILCLE_LEN, cY + CILCLE_LEN);
-			if (cX - CILCLE_LEN <= winX && winX <= cX + CILCLE_LEN && cY - CILCLE_LEN <= winY && winY <= cY + CILCLE_LEN) {
-				player->focusOn = !player->focusOn;
-				break;
+		if (!islogOn) {
+			for (auto iter = players.begin(); iter != players.end(); iter++) {
+				Player* player = iter->second;
+				int cX = player->clntPoint.X;
+				int cY = player->clntPoint.Y;
+				cX *= ((double)cellSize / 64);
+				cX += offsetX;
+				cY *= ((double)cellSize / 64);
+				cY += offsetY;
+				// Ellipse(hdc, cX - CILCLE_LEN, cY - CILCLE_LEN, cX + CILCLE_LEN, cY + CILCLE_LEN);
+				if (cX - CILCLE_LEN <= winX && winX <= cX + CILCLE_LEN && cY - CILCLE_LEN <= winY && winY <= cY + CILCLE_LEN) {
+					player->focusOn = !player->focusOn;
+					break;
+				}
+			}
+		}
+		else {
+			static Player* logOnPlayer = nullptr;
+			if (logOnPlayer) {
+				logOnPlayer->logOn = false;
+				logOnPlayer = nullptr;
+				return;
+			}
+			
+			for (auto iter = players.begin(); iter != players.end(); iter++) {
+				Player* player = iter->second;
+				int cX = player->clntPoint.X;
+				int cY = player->clntPoint.Y;
+				cX *= ((double)cellSize / 64);
+				cX += offsetX;
+				cY *= ((double)cellSize / 64);
+				cY += offsetY;
+				// Ellipse(hdc, cX - CILCLE_LEN, cY - CILCLE_LEN, cX + CILCLE_LEN, cY + CILCLE_LEN);
+				if (cX - CILCLE_LEN <= winX && winX <= cX + CILCLE_LEN && cY - CILCLE_LEN <= winY && winY <= cY + CILCLE_LEN) {
+					player->logOn = !player->logOn;
+					if (player->logOn) {
+						logOnPlayer = player;
+						std::cout << "[Host ID: " << player->hostID << " Log On!]" << std::endl;
+					}
+					break;
+				}
 			}
 		}
 	}
@@ -182,6 +214,9 @@ public:
 				}
 				else if (player->focusOn) {
 					SelectObject(hdc, hBrushPurple);
+				}
+				else if (player->logOn) {
+					SelectObject(hdc, hBrushBrown);
 				}
 				else if (player->crtFlag) {
 					SelectObject(hdc, hBrushBlue);
