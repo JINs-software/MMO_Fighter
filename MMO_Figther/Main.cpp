@@ -32,9 +32,12 @@ class FighterGameBatch : public JNetBatchProcess
 {
 	void BatchProcess() override {
 		BatchSyncLog();
+		// 로직 수행 중 proxy send 시 존재하지 않은 remote(코어에서 이미 삭제 처리를 한) 세션에 전송을 막음
+		BatchDeleteClientWork();
+
 		BatchTimeOutCheck();
 		BatchAttackWork();
-		BatchDeleteClientWork();
+		//BatchDeleteClientWork();
 		BatchMoveWork();
 		BatchPrintLog();
 	}
@@ -45,11 +48,13 @@ class FighterGameBatch : public JNetBatchProcess
 			return;
 		}
 #endif
+		// 로직 수행 중 proxy send 시 존재하지 않은 remote(코어에서 이미 삭제 처리를 한) 세션에 전송을 막음
+		BatchDeleteClientWork();
 
 		BatchSyncLog();
 		BatchTimeOutCheck();
 		BatchAttackWork();
-		BatchDeleteClientWork();
+		//BatchDeleteClientWork();
 		BatchMoveWork(g_LoopDelta);
 #if defined(CONSOLE_LOG)
 		BatchPrintLog();
