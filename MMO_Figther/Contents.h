@@ -51,6 +51,11 @@ void ForwardDmgMsg(stObjectInfo* attacker, stObjectInfo* target, Grid* grid);
 void ForwardDELMsg(stObjectInfo* object, Grid* grid);
 
 //////////////////////////////
+// Sync 관리
+//////////////////////////////
+void SyncPosition(stObjectInfo* player);
+
+//////////////////////////////
 // g_TimeSet 갱신
 //////////////////////////////
 void ResetTime(stObjectInfo* player);
@@ -82,6 +87,7 @@ void ReceiveEcho(HostID hostID, uint32_t time);
 //////////////////////////////
 // Batch Process
 //////////////////////////////
+void BatchSyncLog();
 void BatchDeleteClientWork();
 void AttackWork(HostID atkerID, HostID targetID, enAttackType atkType);
 void BatchAttackWork();

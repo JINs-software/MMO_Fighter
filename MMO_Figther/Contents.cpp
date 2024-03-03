@@ -17,6 +17,15 @@ std::set<pair<time_t, HostID>/*, std::greater<pair<time_t, HostID>>*/> g_TimeSet
 // 메모리 풀
 JiniPool g_ObjectPool(sizeof(stObjectInfo), MAXIMUM_FIGHTER);
 
+// 시간 측정
+uint16 g_SyncPerLoop;
+clock_t g_Duration_TimeOutCheck;
+clock_t g_Duration_AttackWork;
+clock_t g_Duration_DeleteClient;
+clock_t g_Duration_MoveWork;
+uint16 g_DeleteClientCnt;
+uint16 g_DisconnectedClient;
+
 //===================================================================================================================
 
 //////////////////////////////
@@ -838,6 +847,8 @@ void ForwardDmgMsg(stObjectInfo* attacker, stObjectInfo* target, Grid* grid) {
 void SyncPosition(stObjectInfo* player) {
 	BYTE bodyLen = sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t);
 	g_Proxy.SYNC(player->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_SYNC, player->uiID, player->stPos.usX, player->stPos.usY);
+
+	g_SyncPerLoop++;
 }
 
 //////////////////////////////
@@ -925,11 +936,17 @@ void CreateFighter(HostID hostID) {
 #endif
 	}
 	else {
+		// 코어로부터 생성 지시가 들어왔지만, 생성하고자 하는 HostID가 이미 클라언트 맵에 존재하는 상황이 발생하였음.
+		// 아래 상황이 의심됨
+		// (1) 코어(JNet)에러: 해당 ID는 유효한(살아있는) 플레이어의 ID임에도 불구하고 코어 쪽에서의 ID 할당 오류로 인해 삭제된 ID라 생각하여 새로운 생성 ID로써 전달
+		// (2) 컨텐츠 에러: 코어에서 전달된 삭제 지시를 컨텐츠 단에서 수행하지 못하여 존재하였던 ID
 		ERROR_EXCEPTION_WINDOW(L"CreateFighter", L"gClientMap.find(hostID) != gClientMap.end()");
 	}
 }
 void DeleteFighter(HostID hostID, bool netcoreSide) {
 	if (g_DeleteClientSet.find(hostID) == g_DeleteClientSet.end()) {
+		//size_t setSize = g_DeleteClientSet.size();
+		//cout << "g_DeleteClientSet.size(): " << g_DeleteClientSet.size() << endl;
 		g_DeleteClientSet.insert({ hostID, netcoreSide });
 	}
 }
@@ -1167,7 +1184,26 @@ void ReceiveEcho(HostID hostID, uint32_t time)
 //////////////////////////////
 // Batch Process
 //////////////////////////////
+void BatchSyncLog() {
+	if (g_SyncPerLoop > 0) {
+		cout << "[SYNC] sync count: " << g_SyncPerLoop << endl;
+		cout << "TimeOutCheck: " << g_Duration_TimeOutCheck << endl;
+		cout << "AttackWork: " << g_Duration_AttackWork << endl;
+		cout << "MoveWork: " << g_Duration_MoveWork << endl;
+		cout << "DeleteClient: " << g_Duration_DeleteClient << endl;
+		cout << "DelectClientCnt: " << g_DeleteClientCnt << endl;
+		cout << "DisconnectedClientCnt: " << g_DisconnectedClient << endl;
+
+		g_SyncPerLoop = 0;
+	}
+}
+
 void BatchDeleteClientWork() {
+
+	g_DeleteClientCnt = 0;
+	g_DisconnectedClient = 0;
+	g_Duration_DeleteClient = clock();
+
 	for (auto delCleint : g_DeleteClientSet) {
 		HostID hostID = delCleint.first;
 		bool netcoreSide = delCleint.second;
@@ -1179,6 +1215,9 @@ void BatchDeleteClientWork() {
 			if (!netcoreSide) {
 				//std::cout << "[Delete by Contents] HostID: " << hostID << std::endl;
 				g_Proxy.ForcedDisconnect(hostID);
+			}
+			else {
+				g_DisconnectedClient++;
 			}
 
 #ifdef DUMB_SPACE_DIV
@@ -1198,6 +1237,7 @@ void BatchDeleteClientWork() {
 #endif // JINI_POOL
 
 			g_ClientMap.erase(hostID);
+			g_DeleteClientCnt++;
 		}
 		//else {
 		//	ERROR_EXCEPTION_WINDOW(L"BatchDeleteClientWork", L"gClientMap.find(hostID) == gClientMap.end()");
@@ -1205,6 +1245,8 @@ void BatchDeleteClientWork() {
 		// => 위 분기가 발생하는 것이 잘못된 흐름인가?
 	}
 	g_DeleteClientSet.clear();
+
+	g_Duration_DeleteClient = clock() - g_Duration_DeleteClient;
 }
 void AttackWork(HostID atkerID, HostID targetID, enAttackType atkType) {
 
@@ -1245,6 +1287,9 @@ void AttackWork(HostID atkerID, HostID targetID, enAttackType atkType) {
 	}
 }
 void BatchAttackWork() {
+
+	g_Duration_AttackWork = clock();
+
 	while (!g_AtkWorkQueue.empty()) {
 		stAttackWork& atkWork = g_AtkWorkQueue.front();
 		g_AtkWorkQueue.pop();
@@ -1321,11 +1366,17 @@ void BatchAttackWork() {
 		}
 #endif
 	}
+
+	g_Duration_AttackWork = clock() - g_Duration_AttackWork;
 }
 void BatchMoveWork(uint16 loopDelta) {
 	if (loopDelta <= 0) {
+		g_Duration_MoveWork = clock();
 		return;
 	}
+
+	g_Duration_MoveWork = clock();
+
 	for (auto iter : g_ClientMap) {
 		stObjectInfo* object = iter.second;
 		if (object->bMoveFlag) {
@@ -1464,6 +1515,8 @@ void BatchMoveWork(uint16 loopDelta) {
 #endif 
 		}
 	}
+
+	g_Duration_MoveWork = clock() - g_Duration_MoveWork;
 }
 
 void BatchTimeOutCheck() {
@@ -1473,6 +1526,8 @@ void BatchTimeOutCheck() {
 
 	static uint16 s_TimeCheckDuration = 1000 / SLEEP_TIME_MS;
 	static time_t s_LoopCnt = 0;
+
+	g_Duration_TimeOutCheck = clock();
 
 	g_Time = time(NULL);
 	s_LoopCnt++;
@@ -1512,6 +1567,8 @@ void BatchTimeOutCheck() {
 		}
 #endif
 	}
+
+	g_Duration_TimeOutCheck = clock() - g_Duration_TimeOutCheck;
 }
 
 void BatchPrintLog() {

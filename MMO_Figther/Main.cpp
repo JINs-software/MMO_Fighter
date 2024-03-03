@@ -31,6 +31,7 @@ void ConsoleLog() {
 class FighterGameBatch : public JNetBatchProcess
 {
 	void BatchProcess() override {
+		BatchSyncLog();
 		BatchTimeOutCheck();
 		BatchAttackWork();
 		BatchDeleteClientWork();
@@ -44,6 +45,8 @@ class FighterGameBatch : public JNetBatchProcess
 			return;
 		}
 #endif
+
+		BatchSyncLog();
 		BatchTimeOutCheck();
 		BatchAttackWork();
 		BatchDeleteClientWork();
