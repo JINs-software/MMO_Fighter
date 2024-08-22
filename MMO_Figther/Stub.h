@@ -1,5 +1,5 @@
 #pragma once
-#include "JNetServer.h"
+#include "JNetCoreServer.h"
 #include "RPC/Stub_FightGame.h"
 #include "Contents.h"
 

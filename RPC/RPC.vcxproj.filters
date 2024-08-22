@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="old">
+      <UniqueIdentifier>{84f4116b-7f36-41e3-b938-b9fba3497120}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\MMO_Figther\RPC\old\Common_FightGame.cpp">
+      <Filter>old</Filter>
+    </ClCompile>
+    <ClCompile Include="..\MMO_Figther\RPC\old\Proxy_FightGame.cpp">
+      <Filter>old</Filter>
+    </ClCompile>
+    <ClCompile Include="..\MMO_Figther\RPC\old\Stub_FightGame.cpp">
+      <Filter>old</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\MMO_Figther\RPC\old\Common_FightGame.h">
+      <Filter>old</Filter>
+    </ClInclude>
+    <ClInclude Include="..\MMO_Figther\RPC\old\Proxy_FightGame.h">
+      <Filter>old</Filter>
+    </ClInclude>
+    <ClInclude Include="..\MMO_Figther\RPC\old\Stub_FightGame.h">
+      <Filter>old</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

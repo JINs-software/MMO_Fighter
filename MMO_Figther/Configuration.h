@@ -1,12 +1,8 @@
 #pragma once
 
 #define SERVER_IP "127.0.0.1"
-#define SERVER_PORT 20000
-
+#define SERVER_PORT 12121
 #define MAXIMUM_FIGHTER 20000
-
-//#define SLEEP_LOOP
-#define NON_SLEEP_LOOP
 
 //#define DUMB_SPACE_DIV
 #define FIXED_GRID_SPACE_DIV

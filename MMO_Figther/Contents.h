@@ -6,14 +6,11 @@
 #include <mutex>
 #include <cassert>
 #include <time.h>
+
 #include "Configuration.h"
 #include "GameObject.h"
-
 #include "JNetProxy.h"
 #include "RPC/Proxy_FightGame.h"
-
-#include "ExceptionHandler.h"
-
 #include "JNetPool.h"
 
 extern std::map<HostID, stObjectInfo*> g_ClientMap;
@@ -82,7 +79,6 @@ void AttackFighter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y, enAtta
 // ¿¡ÄÚ
 //////////////////////////////
 void ReceiveEcho(HostID hostID, uint32_t time);
-
 
 //////////////////////////////
 // Batch Process

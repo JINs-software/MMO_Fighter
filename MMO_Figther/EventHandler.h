@@ -1,5 +1,6 @@
 #pragma once
-#include "JNetServer.h"
+#include "JNetCoreServer.h"
+#include "Contents.h"
 
 class EventHandler : public JNetServerEventHandler {
 public:
@@ -11,11 +12,9 @@ public:
 	}
 	void OnClientJoin(HostID remote) override {
 		CreateFighter(remote);
-		//std::cout << "[OnClientJoin] host id: " << remote << ", CreateFighter completed!" << std::endl;
 	}
 	bool OnClientDisconnect(HostID remote) override {
 		DeleteFighter(remote, true);
-		//std::cout << "[OnClientDisconnect] host id: " << remote << ", Client Disconnected Event!" << std::endl;
 		return true;
 	}
 };

@@ -19,7 +19,7 @@ void Grid::Delete(stObjectInfo* obj) {
 
 	if (cells[cellY][cellX] == nullptr) {
 		// 컨텐츠 상 의도되지 않은 분기
-		ERROR_EXCEPTION_WINDOW(L"Grid::Delete", L"삭제 대상을 그리드에서 찾을 수 없음");
+		DebugBreak();
 		return;
 	}
 	else {
@@ -49,7 +49,7 @@ void Grid::Delete(stObjectInfo* obj) {
 
 		if (!delFlag) {
 			// 컨텐츠 상 의도되지 않은 분기
-			ERROR_EXCEPTION_WINDOW(L"Grid::Delete", L"삭제 대상을 그리드에서 찾을 수 없음");
+			DebugBreak();
 		}
 	}
 

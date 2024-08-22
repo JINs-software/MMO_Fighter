@@ -18,11 +18,21 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\MMO_Figther\RPC\old\Common_FightGame.cpp" />
+    <ClCompile Include="..\MMO_Figther\RPC\old\Proxy_FightGame.cpp" />
+    <ClCompile Include="..\MMO_Figther\RPC\old\Stub_FightGame.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\MMO_Figther\RPC\old\Common_FightGame.h" />
+    <ClInclude Include="..\MMO_Figther\RPC\old\Proxy_FightGame.h" />
+    <ClInclude Include="..\MMO_Figther\RPC\old\Stub_FightGame.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{46c3d289-df6c-40c0-b5d9-322558efffe9}</ProjectGuid>
-    <RootNamespace>MMOFigther</RootNamespace>
+    <ProjectGuid>{b29297fa-9c99-4963-aa22-35fcc96444b1}</ProjectGuid>
+    <RootNamespace>RPC</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -104,13 +114,10 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)\RPC;$(SolutionDir)..\..\0. JiniNet\JiniNet\Include;$(SolutionDir)..\..\0. Utility\0. ServerNetwork\include;$(SolutionDir)..\..\0. Utility\2. RingBuffer\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(SolutionDir)..\..\0. JiniNet\JiniNet\Library\$(Configuration)\JiniNet.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -121,33 +128,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)\RPC;$(SolutionDir)..\..\0. JiniNet\JiniNet\Include;$(SolutionDir)..\..\0. Utility\RingBuffer\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <Optimization>MaxSpeed</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(SolutionDir)..\..\0. JiniNet\JiniNet\Library\$(Configuration)\JiniNet.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="Configuration.h" />
-    <ClInclude Include="Contents.h" />
-    <ClInclude Include="EventHandler.h" />
-    <ClInclude Include="GameObject.h" />
-    <ClInclude Include="Stub.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="Contents.cpp" />
-    <ClCompile Include="GameObject.cpp" />
-    <ClCompile Include="Main.cpp" />
-    <ClCompile Include="Stub.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Protocol.json" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

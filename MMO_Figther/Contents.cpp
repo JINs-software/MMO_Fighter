@@ -1,6 +1,8 @@
 #include "Contents.h"
 #include <ctime>
 
+using namespace std;
+
 extern FightGameS2C::Proxy g_Proxy;
 std::map<HostID, stObjectInfo*> g_ClientMap;
 std::vector<std::vector<stObjectInfo*>> g_ClientGrid(dfRANGE_MOVE_BOTTOM + 1, std::vector<stObjectInfo*>(dfRANGE_MOVE_RIGHT + 1, nullptr));
@@ -1005,7 +1007,7 @@ void CreateFighter(HostID hostID) {
 		// 아래 상황이 의심됨
 		// (1) 코어(JNet)에러: 해당 ID는 유효한(살아있는) 플레이어의 ID임에도 불구하고 코어 쪽에서의 ID 할당 오류로 인해 삭제된 ID라 생각하여 새로운 생성 ID로써 전달
 		// (2) 컨텐츠 에러: 코어에서 전달된 삭제 지시를 컨텐츠 단에서 수행하지 못하여 존재하였던 ID
-		ERROR_EXCEPTION_WINDOW(L"CreateFighter", L"gClientMap.find(hostID) != gClientMap.end()");
+		//ERROR_EXCEPTION_WINDOW(L"CreateFighter", L"gClientMap.find(hostID) != gClientMap.end()");
 	}
 }
 void DeleteFighter(HostID hostID, bool netcoreSide) {
@@ -1281,13 +1283,8 @@ void BatchDeleteClientWork() {
 
 			// 코어에 연결 종료 요청
 			if (!netcoreSide) {
-				//std::cout << "[Delete by Contents] HostID: " << hostID << std::endl;
-				proxyRet = g_Proxy.ForcedDisconnect(hostID);
-				assert(proxyRet);
+				g_Proxy.Disconnect(hostID);
 			}
-			//else {
-			//	g_DisconnectedClient++;
-			//}
 
 #ifdef DUMB_SPACE_DIV
 			ForwardMsgToNear(client, FightGameS2C::RPC_DEL_CHARACTER);
@@ -1352,7 +1349,7 @@ void AttackWork(HostID atkerID, HostID targetID, enAttackType atkType) {
 #endif
 	}
 	else {
-		ERROR_EXCEPTION_WINDOW(L"AttackWork(..)", L"공격자 또는 타겟 대상 없음");
+		//ERROR_EXCEPTION_WINDOW(L"AttackWork(..)", L"공격자 또는 타겟 대상 없음");
 	}
 }
 void BatchAttackWork() {
@@ -1378,7 +1375,7 @@ void BatchAttackWork() {
 			atkRangeX = dfATTACK3_RANGE_X;
 		}
 		else {
-			ERROR_EXCEPTION_WINDOW(L"MAIN(공격 처리)", L"UNVALID ATK TYPE");
+			//ERROR_EXCEPTION_WINDOW(L"MAIN(공격 처리)", L"UNVALID ATK TYPE");
 		}
 
 #ifdef DUMB_SPACE_DIV

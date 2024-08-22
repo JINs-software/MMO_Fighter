@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClInclude Include="..\Protocol.h" />
     <ClInclude Include="EventHandler.h">
       <Filter>JNet</Filter>
     </ClInclude>
@@ -15,7 +14,6 @@
     <ClInclude Include="GameObject.h">
       <Filter>Contents</Filter>
     </ClInclude>
-    <ClInclude Include="ExceptionHandler.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -25,7 +23,6 @@
     <ClCompile Include="Contents.cpp">
       <Filter>Contents</Filter>
     </ClCompile>
-    <ClCompile Include="ExceptionHandler.cpp" />
     <ClCompile Include="GameObject.cpp">
       <Filter>Contents</Filter>
     </ClCompile>
@@ -37,5 +34,11 @@
     <Filter Include="Contents">
       <UniqueIdentifier>{655865da-b09f-470c-b21a-18260674d5d2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Json">
+      <UniqueIdentifier>{1d63f7ad-10ef-4e63-9ca1-1832fcaaba26}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Protocol.json" />
   </ItemGroup>
 </Project>
