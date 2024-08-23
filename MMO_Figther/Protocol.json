@@ -1,6 +1,6 @@
 {
   "COMPILE_MODE": "RPC",
-  "SERVER_OUTPUT_DIR": "",
+  "SERVER_OUTPUT_DIR": "C:\\Users\\HurJin\\0. GameServerStudy\\1. Project\\MMO_Fighter\\MMO_Figther\\RPC",
   "CLIENT_OUTPUT_DIR": "",
   "JPD": [
     {
@@ -11,18 +11,6 @@
           "Message": "CRT_CHARACTER",
           "Dir": "S2C",
           "Param": [
-            {
-              "Type": "BYTE",
-              "Name": "byCode"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "bySize"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "byType"
-            },
             {
               "Type": "uint32_t",
               "Name": "ID"
@@ -50,18 +38,6 @@
           "Dir": "S2C",
           "Param": [
             {
-              "Type": "BYTE",
-              "Name": "byCode"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "bySize"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "byType"
-            },
-            {
               "Type": "uint32_t",
               "Name": "ID"
             },
@@ -88,18 +64,6 @@
           "Dir": "S2C",
           "Param": [
             {
-              "Type": "BYTE",
-              "Name": "byCode"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "bySize"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "byType"
-            },
-            {
               "Type": "uint32_t",
               "Name": "ID"
             }
@@ -117,18 +81,6 @@
           "Param": [
             {
               "Type": "BYTE",
-              "Name": "byCode"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "bySize"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "byType"
-            },
-            {
-              "Type": "BYTE",
               "Name": "Dir"
             },
             {
@@ -145,18 +97,6 @@
           "Message": "MOVE_START",
           "Dir": "S2C",
           "Param": [
-            {
-              "Type": "BYTE",
-              "Name": "byCode"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "bySize"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "byType"
-            },
             {
               "Type": "uint32_t",
               "Name": "ID"
@@ -181,18 +121,6 @@
           "Param": [
             {
               "Type": "BYTE",
-              "Name": "byCode"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "bySize"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "byType"
-            },
-            {
-              "Type": "BYTE",
               "Name": "Dir"
             },
             {
@@ -209,18 +137,6 @@
           "Message": "MOVE_STOP",
           "Dir": "S2C",
           "Param": [
-            {
-              "Type": "BYTE",
-              "Name": "byCode"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "bySize"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "byType"
-            },
             {
               "Type": "uint32_t",
               "Name": "ID"
@@ -251,18 +167,6 @@
           "Param": [
             {
               "Type": "BYTE",
-              "Name": "byCode"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "bySize"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "byType"
-            },
-            {
-              "Type": "BYTE",
               "Name": "Dir"
             },
             {
@@ -280,18 +184,6 @@
           "Dir": "S2C",
           "Param": [
             {
-              "Type": "BYTE",
-              "Name": "byCode"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "bySize"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "byType"
-            },
-            {
               "Type": "uint32_t",
               "Name": "ID"
             },
@@ -315,18 +207,6 @@
           "Param": [
             {
               "Type": "BYTE",
-              "Name": "byCode"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "bySize"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "byType"
-            },
-            {
-              "Type": "BYTE",
               "Name": "Dir"
             },
             {
@@ -343,18 +223,6 @@
           "Message": "ATTACK2",
           "Dir": "S2C",
           "Param": [
-            {
-              "Type": "BYTE",
-              "Name": "byCode"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "bySize"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "byType"
-            },
             {
               "Type": "uint32_t",
               "Name": "ID"
@@ -379,18 +247,6 @@
           "Param": [
             {
               "Type": "BYTE",
-              "Name": "byCode"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "bySize"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "byType"
-            },
-            {
-              "Type": "BYTE",
               "Name": "Dir"
             },
             {
@@ -407,18 +263,6 @@
           "Message": "ATTACK3",
           "Dir": "S2C",
           "Param": [
-            {
-              "Type": "BYTE",
-              "Name": "byCode"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "bySize"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "byType"
-            },
             {
               "Type": "uint32_t",
               "Name": "ID"
@@ -448,18 +292,6 @@
           "Dir": "S2C",
           "Param": [
             {
-              "Type": "BYTE",
-              "Name": "byCode"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "bySize"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "byType"
-            },
-            {
               "Type": "uint32_t",
               "Name": "attker"
             },
@@ -484,18 +316,6 @@
           "Dir": "S2C",
           "Param": [
             {
-              "Type": "BYTE",
-              "Name": "byCode"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "bySize"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "byType"
-            },
-            {
               "Type": "uint32_t",
               "Name": "ID"
             },
@@ -514,18 +334,6 @@
           "Dir": "C2S",
           "Param": [
             {
-              "Type": "BYTE",
-              "Name": "byCode"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "bySize"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "byType"
-            },
-            {
               "Type": "uint32_t",
               "Name": "Time"
             }
@@ -535,18 +343,6 @@
           "Message": "ECHO",
           "Dir": "S2C",
           "Param": [
-            {
-              "Type": "BYTE",
-              "Name": "byCode"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "bySize"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "byType"
-            },
             {
               "Type": "uint32_t",
               "Name": "Time"

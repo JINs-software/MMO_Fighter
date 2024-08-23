@@ -9,6 +9,7 @@
 #include "RPC/Common_FightGameMove.cpp"
 #include "RPC/Common_FightGameAttack.cpp"
 #include "RPC/Common_FightGameDamage.cpp"
+#include "RPC/Common_FightGameComm.cpp"
 #include "RPC/Proxy_FightGameCrtDel.cpp"
 #include "RPC/Proxy_FightGameMove.cpp"
 #include "RPC/Proxy_FightGameAttack.cpp"
@@ -48,7 +49,10 @@ FightGameMove_S2C::Proxy g_ProxyMove;
 FightGameAttack_S2C::Proxy g_ProxyAttack;
 FightGameDamage_S2C::Proxy g_ProxyDamage;
 FightGameComm_S2C::Proxy g_ProxyComm;
-Stub g_Stub;
+StubMove g_StubMove;
+StubAttack g_StubAttack;
+StubComm g_StubComm;
+
 EventHandler g_eventHnd;
 JNetCoreServer* g_JNetServer;
 
@@ -63,14 +67,20 @@ int main() {
 
 
 void Init() {
-	g_JNetServer = new JNetCoreServer(true);
+	g_JNetServer = new JNetCoreServer(false);
 
 	g_JNetServer->AttachEventHandler(&g_eventHnd);
+
 	g_JNetServer->AttachProxy(&g_ProxyCrtDel, VALID_PACKET_NUM);
 	g_JNetServer->AttachProxy(&g_ProxyMove, VALID_PACKET_NUM);
 	g_JNetServer->AttachProxy(&g_ProxyAttack, VALID_PACKET_NUM);
 	g_JNetServer->AttachProxy(&g_ProxyDamage, VALID_PACKET_NUM);
-	g_JNetServer->AttachStub(&g_Stub, VALID_PACKET_NUM);
+	g_JNetServer->AttachProxy(&g_ProxyComm, VALID_PACKET_NUM);
+
+	g_JNetServer->AttachStub(&g_StubMove, VALID_PACKET_NUM);
+	g_JNetServer->AttachStub(&g_StubAttack, VALID_PACKET_NUM);
+	g_JNetServer->AttachStub(&g_StubComm, VALID_PACKET_NUM);
+
 	g_JNetServer->AttachBatchProcess(&fightGameBatch);
 
 	g_JNetServer->Init(SERVER_PORT);

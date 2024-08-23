@@ -4,9 +4,6 @@
 #define SERVER_PORT 12121
 #define MAXIMUM_FIGHTER 20000
 
-//#define DUMB_SPACE_DIV
-#define FIXED_GRID_SPACE_DIV
-
 //#define DEFAULT_POOL
 #define JINI_POOL
 
