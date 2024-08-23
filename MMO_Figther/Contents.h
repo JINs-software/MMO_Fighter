@@ -10,7 +10,6 @@
 #include "Configuration.h"
 #include "GameObject.h"
 #include "JNetProxy.h"
-#include "RPC/Proxy_FightGame.h"
 #include "JNetPool.h"
 
 extern std::map<HostID, stObjectInfo*> g_ClientMap;

@@ -1,9 +1,20 @@
 #include "Contents.h"
 #include <ctime>
 
+#include "RPC/Proxy_FightGameCrtDel.h"
+#include "RPC/Proxy_FightGameMove.h"
+#include "RPC/Proxy_FightGameAttack.h"
+#include "RPC/Proxy_FightGameDamage.h"
+#include "RPC/Proxy_FightGameComm.h"
+
 using namespace std;
 
-extern FightGameS2C::Proxy g_Proxy;
+extern FightGameCrtDel_S2C::Proxy g_ProxyCrtDel;
+extern FightGameMove_S2C::Proxy g_ProxyMove;
+extern FightGameAttack_S2C::Proxy g_ProxyAttack;
+extern FightGameDamage_S2C::Proxy g_ProxyDamage;
+extern FightGameComm_S2C::Proxy g_ProxyComm;
+
 std::map<HostID, stObjectInfo*> g_ClientMap;
 std::vector<std::vector<stObjectInfo*>> g_ClientGrid(dfRANGE_MOVE_BOTTOM + 1, std::vector<stObjectInfo*>(dfRANGE_MOVE_RIGHT + 1, nullptr));
 std::map<HostID, bool> g_DeleteClientSet;
@@ -104,9 +115,9 @@ void FowardCRTMsg(stObjectInfo* newObject) {		// 새로 생성될 객체가 서버 관리 자
 	for (uint16_t y = top; y <= bottom; y++) {
 		for (uint16_t x = left; x <= right; x++) {
 			for(stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
-				proxyRet = g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, newObject->uiID, newObject->byDir, newObject->stPos.usX, newObject->stPos.usY, newObject->byHP);
+				proxyRet = g_ProxyCrtDel.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, newObject->uiID, newObject->byDir, newObject->stPos.usX, newObject->stPos.usY, newObject->byHP);
 				assert(proxyRet);
-				proxyRet = g_Proxy.CRT_OTHER_CHARACTER(newObject->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+				proxyRet = g_ProxyCrtDel.CRT_OTHER_CHARACTER(newObject->uiID, VALID_PACKET_NUM, bodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
 				assert(proxyRet);
 			}
 		}
@@ -128,7 +139,7 @@ void ForwardDmgMsg(stObjectInfo* attacker, stObjectInfo* target) {
 	for (uint16_t y = top; y <= bottom; y++) {
 		for (uint16_t x = left; x <= right; x++) {
 			for (stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
-				proxyRet = g_Proxy.DAMAGE(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_DAMAGE, attacker->uiID, target->uiID, target->byHP);
+				proxyRet = g_ProxyDamage.DAMAGE(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameDamage_S2C::RPC_DAMAGE, attacker->uiID, target->uiID, target->byHP);
 				assert(proxyRet);
 			}
 		}
@@ -142,13 +153,13 @@ void ForwardMsgToNear(stObjectInfo* player, RpcID msgID) {
 	uint16_t right = player->stPos.usX + dfGridCell_Length * dfGridCell_Col / 2 > dfRANGE_MOVE_RIGHT ? dfRANGE_MOVE_RIGHT : player->stPos.usX + dfGridCell_Length * dfGridCell_Col / 2;
 
 	switch (msgID) {
-	case FightGameS2C::RPC_DEL_CHARACTER: {
+	case FightGameCrtDel_S2C::RPC_DEL_CHARACTER: {
 		BYTE bodyLen = sizeof(player->uiID);
 		for (uint16_t y = top; y <= bottom; y++) {
 			for (uint16_t x = left; x <= right; x++) {
 				for (stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					if (nearPlayer->uiID != player->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-						proxyRet = g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_DEL_CHARACTER, player->uiID);
+						proxyRet = g_ProxyCrtDel.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, player->uiID);
 						assert(proxyRet);
 					}
 				}
@@ -156,14 +167,14 @@ void ForwardMsgToNear(stObjectInfo* player, RpcID msgID) {
 		}
 		break;
 	}
-	case FightGameS2C::RPC_MOVE_START: {
+	case FightGameMove_S2C::RPC_MOVE_START: {
 		BYTE bodyLen = sizeof(player->uiID) + sizeof(player->byDir) + sizeof(player->stPos.usX) + sizeof(player->stPos.usY);
 		for (uint16_t y = top; y <= bottom; y++) {
 			for (uint16_t x = left; x <= right; x++) {
 				for (stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					if (nearPlayer->uiID != player->uiID) {	// 이동 대상은 메시지 포워딩 대상 제외						
 						//std::cout << "[Forward Start] X: " << x << ", Y: " << y << std::endl;
-						proxyRet = g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_MOVE_START, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY);
+						proxyRet = g_ProxyMove.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameMove_S2C::RPC_MOVE_START, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY);
 						assert(proxyRet);
 					}
 				}
@@ -171,14 +182,14 @@ void ForwardMsgToNear(stObjectInfo* player, RpcID msgID) {
 		}
 		break;
 	}
-	case FightGameS2C::RPC_MOVE_STOP: {
+	case FightGameMove_S2C::RPC_MOVE_STOP: {
 		BYTE bodyLen = sizeof(player->uiID) + sizeof(player->byDir) + sizeof(player->stPos.usX) + sizeof(player->stPos.usY);
 		for (uint16_t y = top; y <= bottom; y++) {
 			for (uint16_t x = left; x <= right; x++) {
 				for (stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					if (nearPlayer->uiID != player->uiID) {	// 이동 대상은 메시지 포워딩 대상 제외
 						//std::cout << "[Forward Stop] X: " << x << ", Y: " << y << std::endl;
-						proxyRet = g_Proxy.MOVE_STOP(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_MOVE_STOP, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY);
+						proxyRet = g_ProxyMove.MOVE_STOP(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameMove_S2C::RPC_MOVE_STOP, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY);
 						assert(proxyRet);
 					}
 				}
@@ -186,13 +197,13 @@ void ForwardMsgToNear(stObjectInfo* player, RpcID msgID) {
 		}
 		break;
 	}
-	case FightGameS2C::RPC_ATTACK1: {
+	case FightGameAttack_S2C::RPC_ATTACK1: {
 		BYTE bodyLen = sizeof(player->uiID) + sizeof(player->byDir) + sizeof(player->stPos.usX) + sizeof(player->stPos.usY);
 		for (uint16_t y = top; y <= bottom; y++) {
 			for (uint16_t x = left; x <= right; x++) {
 				for (stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					if (nearPlayer->uiID != player->uiID) {	// 공격자는 메시지 포워딩 대상 제외
-						proxyRet = g_Proxy.ATTACK1(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_ATTACK1, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY);
+						proxyRet = g_ProxyAttack.ATTACK1(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameAttack_S2C::RPC_ATTACK1, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY);
 						assert(proxyRet);
 					}
 				}
@@ -200,13 +211,13 @@ void ForwardMsgToNear(stObjectInfo* player, RpcID msgID) {
 		}
 		break;
 	}
-	case FightGameS2C::RPC_ATTACK2: {
+	case FightGameAttack_S2C::RPC_ATTACK2: {
 		BYTE bodyLen = sizeof(player->uiID) + sizeof(player->byDir) + sizeof(player->stPos.usX) + sizeof(player->stPos.usY);
 		for (uint16_t y = top; y <= bottom; y++) {
 			for (uint16_t x = left; x <= right; x++) {
 				for (stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					if (nearPlayer->uiID != player->uiID) {	// 공격자는 메시지 포워딩 대상 제외
-						proxyRet = g_Proxy.ATTACK2(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_ATTACK2, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY);
+						proxyRet = g_ProxyAttack.ATTACK2(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameAttack_S2C::RPC_ATTACK2, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY);
 						assert(proxyRet);
 					}
 				}
@@ -214,13 +225,13 @@ void ForwardMsgToNear(stObjectInfo* player, RpcID msgID) {
 		}
 		break;
 	}
-	case FightGameS2C::RPC_ATTACK3: {
+	case FightGameAttack_S2C::RPC_ATTACK3: {
 		BYTE bodyLen = sizeof(player->uiID) + sizeof(player->byDir) + sizeof(player->stPos.usX) + sizeof(player->stPos.usY);
 		for (uint16_t y = top; y <= bottom; y++) {
 			for (uint16_t x = left; x <= right; x++) {
 				for (stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					if (nearPlayer->uiID != player->uiID) {	// 공격자는 메시지 포워딩 대상 제외
-						proxyRet = g_Proxy.ATTACK3(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_ATTACK3, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY);
+						proxyRet = g_ProxyAttack.ATTACK3(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameAttack_S2C::RPC_ATTACK3, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY);
 						assert(proxyRet);
 					}
 				}
@@ -289,9 +300,9 @@ void FowardCrtDelMsgByMove(stObjectInfo* player, const stPoint& beforePos) {
 		for (uint16_t x = delLeft; x < delRight; x++) {
 			for (stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 				if (nearPlayer->uiID != player->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-					proxyRet = g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, sizeof(player->uiID), FightGameS2C::RPC_DEL_CHARACTER, player->uiID);
+					proxyRet = g_ProxyCrtDel.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, sizeof(player->uiID), FightGameCrtDel_S2C::RPC_DEL_CHARACTER, player->uiID);
 					assert(proxyRet);
-					proxyRet = g_Proxy.DEL_CHARACTER(player->uiID, VALID_PACKET_NUM, sizeof(player->uiID), FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+					proxyRet = g_ProxyCrtDel.DEL_CHARACTER(player->uiID, VALID_PACKET_NUM, sizeof(player->uiID), FightGameCrtDel_S2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
 					assert(proxyRet);
 				}
 			}
@@ -300,13 +311,14 @@ void FowardCrtDelMsgByMove(stObjectInfo* player, const stPoint& beforePos) {
 	for (uint16_t y = top; y <= bottom; y++) {
 		// x 변동 생성
 		for (uint16_t x = crtLeft; x < crtRight; x++) {
+
 			for (stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 				if (nearPlayer->uiID != player->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-					proxyRet = g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY, player->byHP);
+					proxyRet = g_ProxyCrtDel.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY, player->byHP);
 					assert(proxyRet);
-					proxyRet = g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY);
+					proxyRet = g_ProxyMove.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameMove_S2C::RPC_MOVE_START, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY);
 					assert(proxyRet);
-					proxyRet = g_Proxy.CRT_OTHER_CHARACTER(player->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+					proxyRet = g_ProxyCrtDel.CRT_OTHER_CHARACTER(player->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
 					assert(proxyRet);
 				}
 			}
@@ -318,9 +330,9 @@ void FowardCrtDelMsgByMove(stObjectInfo* player, const stPoint& beforePos) {
 		for (uint16_t y = delTop; y < delBottom; y++) {
 			for (stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 				if (nearPlayer->uiID != player->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-					proxyRet = g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, sizeof(player->uiID), FightGameS2C::RPC_DEL_CHARACTER, player->uiID);
+					proxyRet = g_ProxyCrtDel.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, sizeof(player->uiID), FightGameCrtDel_S2C::RPC_DEL_CHARACTER, player->uiID);
 					assert(proxyRet);
-					proxyRet = g_Proxy.DEL_CHARACTER(player->uiID, VALID_PACKET_NUM, sizeof(player->uiID), FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+					proxyRet = g_ProxyCrtDel.DEL_CHARACTER(player->uiID, VALID_PACKET_NUM, sizeof(player->uiID), FightGameCrtDel_S2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
 					assert(proxyRet);
 				}
 			}
@@ -331,11 +343,11 @@ void FowardCrtDelMsgByMove(stObjectInfo* player, const stPoint& beforePos) {
 		for (uint16_t y = crtTop; y < crtBottom; y++) {
 			for (stObjectInfo* nearPlayer = g_ClientGrid[y][x]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 				if (nearPlayer->uiID != player->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-					proxyRet = g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY, player->byHP);
+					proxyRet = g_ProxyCrtDel.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY, player->byHP);
 					assert(proxyRet);
-					proxyRet = g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY);
+					proxyRet = g_ProxyMove.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameMove_S2C::RPC_MOVE_START, player->uiID, player->byDir, player->stPos.usX, player->stPos.usY);
 					assert(proxyRet);
-					proxyRet = g_Proxy.CRT_OTHER_CHARACTER(player->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+					proxyRet = g_ProxyCrtDel.CRT_OTHER_CHARACTER(player->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
 					assert(proxyRet);
 				}
 			}
@@ -500,16 +512,16 @@ void GridResetInterestSpace(stPoint beforePos, stObjectInfo* object, Grid* grid,
 		// (1) 꼭지점 삭제
 		//for (stObjectInfo* nearPlayer = grid->cells[delRow.second][delCol.second]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 		//	if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-		//		g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
-		//		g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+		//		g_ProxyCrtDel.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, object->uiID);
+		//		g_ProxyCrtDel.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
 		//	}
 		//}
 		for (uint16 cx = delCol.second.first; cx <= delCol.second.second; cx++) {
 			for (uint16 cy = delRow.second.first; cy <= delRow.second.second; cy++) {
 				for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
-					proxyRet = g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
+					proxyRet = g_ProxyCrtDel.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, object->uiID);
 					assert(proxyRet);
-					proxyRet = g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+					proxyRet = g_ProxyCrtDel.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
 					assert(proxyRet);
 				}
 			}
@@ -521,8 +533,8 @@ void GridResetInterestSpace(stPoint beforePos, stObjectInfo* object, Grid* grid,
 			//	uint16 cy = delRow.second;
 			//	for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 			//		if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-			//			g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
-			//			g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+			//			g_ProxyCrtDel.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, object->uiID);
+			//			g_ProxyCrtDel.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
 			//		}
 			//	}
 			//}
@@ -533,9 +545,9 @@ void GridResetInterestSpace(stPoint beforePos, stObjectInfo* object, Grid* grid,
 				for (uint16 cy = delRow.second.first; cy <= delRow.second.second; cy++) {
 					for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 						if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-							proxyRet = g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
+							proxyRet = g_ProxyCrtDel.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, object->uiID);
 							assert(proxyRet);
-							proxyRet = g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+							proxyRet = g_ProxyCrtDel.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
 							assert(proxyRet);
 						}
 					}
@@ -549,8 +561,8 @@ void GridResetInterestSpace(stPoint beforePos, stObjectInfo* object, Grid* grid,
 			//	uint16 cx = delCol.second;
 			//	for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 			//		if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-			//			g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
-			//			g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+			//			g_ProxyCrtDel.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, object->uiID);
+			//			g_ProxyCrtDel.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
 			//		}
 			//	}
 			//}
@@ -561,9 +573,9 @@ void GridResetInterestSpace(stPoint beforePos, stObjectInfo* object, Grid* grid,
 				for(uint16 cx = delCol.second.first; cx <= delCol.second.second; cx++) {
 					for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 						if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-							proxyRet = g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
+							proxyRet = g_ProxyCrtDel.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, object->uiID);
 							assert(proxyRet);
-							proxyRet = g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+							proxyRet = g_ProxyCrtDel.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
 							assert(proxyRet);
 						}
 					}
@@ -576,8 +588,8 @@ void GridResetInterestSpace(stPoint beforePos, stObjectInfo* object, Grid* grid,
 		//	uint16 cy = delRow.second;
 		//	for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 		//		if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-		//			g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
-		//			g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+		//			g_ProxyCrtDel.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, object->uiID);
+		//			g_ProxyCrtDel.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
 		//		}
 		//	}
 		//}
@@ -585,9 +597,9 @@ void GridResetInterestSpace(stPoint beforePos, stObjectInfo* object, Grid* grid,
 			for (uint16 cy = delRow.second.first; cy <= delRow.second.second; cy++) {
 				for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-						proxyRet = g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
+						proxyRet = g_ProxyCrtDel.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, object->uiID);
 						assert(proxyRet);
-						proxyRet = g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+						proxyRet = g_ProxyCrtDel.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
 						assert(proxyRet);
 					}
 				}
@@ -599,8 +611,8 @@ void GridResetInterestSpace(stPoint beforePos, stObjectInfo* object, Grid* grid,
 		//	uint16 cx = delCol.second;
 		//	for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 		//		if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-		//			g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
-		//			g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+		//			g_ProxyCrtDel.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, object->uiID);
+		//			g_ProxyCrtDel.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
 		//		}
 		//	}
 		//}
@@ -608,9 +620,9 @@ void GridResetInterestSpace(stPoint beforePos, stObjectInfo* object, Grid* grid,
 			for (uint16 cx = delCol.second.first; cx <= delCol.second.second; cx++) {
 				for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-						proxyRet = g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
+						proxyRet = g_ProxyCrtDel.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, delBodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, object->uiID);
 						assert(proxyRet);
-						proxyRet = g_Proxy.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameS2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
+						proxyRet = g_ProxyCrtDel.DEL_CHARACTER(object->uiID, VALID_PACKET_NUM, delBodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, nearPlayer->uiID);
 						assert(proxyRet);
 					}
 				}
@@ -622,19 +634,19 @@ void GridResetInterestSpace(stPoint beforePos, stObjectInfo* object, Grid* grid,
 		// (1) 꼭지점 생성
 		//for (stObjectInfo* nearPlayer = grid->cells[crtRow.second][crtCol.second]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 		//	if (nearPlayer->uiID != object->uiID) {
-		//		g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
-		//		g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
-		//		g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+		//		g_ProxyCrtDel.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
+		//		g_ProxyMove.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameMove_S2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+		//		g_ProxyCrtDel.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
 		//	}
 		//}
 		for (uint16 cx = crtCol.second.first; cx <= crtCol.second.second; cx++) {
 			for (uint16 cy = crtRow.second.first; cy <= crtRow.second.second; cy++) {
 				for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
-					proxyRet = g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
+					proxyRet = g_ProxyCrtDel.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
 					assert(proxyRet);
-					proxyRet = g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+					proxyRet = g_ProxyMove.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameMove_S2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
 					assert(proxyRet);
-					proxyRet = g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+					proxyRet = g_ProxyCrtDel.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
 					assert(proxyRet);
 				}
 			}
@@ -646,9 +658,9 @@ void GridResetInterestSpace(stPoint beforePos, stObjectInfo* object, Grid* grid,
 			//	uint16 cy = crtRow.second;
 			//	for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 			//		if (nearPlayer->uiID != object->uiID) {
-			//			g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
-			//			g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
-			//			g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+			//			g_ProxyCrtDel.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
+			//			g_ProxyMove.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameMove_S2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+			//			g_ProxyCrtDel.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
 			//		}
 			//	}
 			//}
@@ -659,11 +671,11 @@ void GridResetInterestSpace(stPoint beforePos, stObjectInfo* object, Grid* grid,
 				for (uint16 cy = crtRow.second.first; cy <= crtRow.second.second; cy++) {
 					for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 						if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-							proxyRet = g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
+							proxyRet = g_ProxyCrtDel.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
 							assert(proxyRet);
-							proxyRet = g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+							proxyRet = g_ProxyMove.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameMove_S2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
 							assert(proxyRet);
-							proxyRet = g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+							proxyRet = g_ProxyCrtDel.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
 							assert(proxyRet);
 						}
 					}
@@ -676,9 +688,9 @@ void GridResetInterestSpace(stPoint beforePos, stObjectInfo* object, Grid* grid,
 			//	uint16 cx = crtCol.second;
 			//	for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 			//		if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-			//			g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
-			//			g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
-			//			g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+			//			g_ProxyCrtDel.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
+			//			g_ProxyMove.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameMove_S2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+			//			g_ProxyCrtDel.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
 			//		}
 			//	}
 			//}
@@ -689,11 +701,11 @@ void GridResetInterestSpace(stPoint beforePos, stObjectInfo* object, Grid* grid,
 				for (uint16 cx = crtCol.second.first; cx <= crtCol.second.second; cx++) {
 					for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 						if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-							proxyRet = g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
+							proxyRet = g_ProxyCrtDel.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
 							assert(proxyRet);
-							proxyRet = g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+							proxyRet = g_ProxyMove.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameMove_S2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
 							assert(proxyRet);
-							proxyRet = g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+							proxyRet = g_ProxyCrtDel.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
 							assert(proxyRet);
 						}
 					}
@@ -706,9 +718,9 @@ void GridResetInterestSpace(stPoint beforePos, stObjectInfo* object, Grid* grid,
 		//	uint16 cy = crtRow.second;
 		//	for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 		//		if (nearPlayer->uiID != object->uiID) {
-		//			g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
-		//			g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
-		//			g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+		//			g_ProxyCrtDel.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
+		//			g_ProxyMove.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameMove_S2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+		//			g_ProxyCrtDel.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
 		//		}
 		//	}
 		//}
@@ -716,11 +728,11 @@ void GridResetInterestSpace(stPoint beforePos, stObjectInfo* object, Grid* grid,
 			for (uint16 cy = crtRow.second.first; cy <= crtRow.second.second; cy++) {
 				for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-						proxyRet = g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
+						proxyRet = g_ProxyCrtDel.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
 						assert(proxyRet);
-						proxyRet = g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+						proxyRet = g_ProxyMove.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameMove_S2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
 						assert(proxyRet);
-						proxyRet = g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+						proxyRet = g_ProxyCrtDel.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
 						assert(proxyRet);
 					}
 				}
@@ -732,9 +744,9 @@ void GridResetInterestSpace(stPoint beforePos, stObjectInfo* object, Grid* grid,
 		//	uint16 cx = crtCol.second;
 		//	for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 		//		if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-		//			g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
-		//			g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
-		//			g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+		//			g_ProxyCrtDel.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
+		//			g_ProxyMove.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameMove_S2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+		//			g_ProxyCrtDel.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
 		//		}
 		//	}
 		//}
@@ -742,11 +754,11 @@ void GridResetInterestSpace(stPoint beforePos, stObjectInfo* object, Grid* grid,
 			for (uint16 cx = crtCol.second.first; cx <= crtCol.second.second; cx++) {
 				for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-						proxyRet = g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
+						proxyRet = g_ProxyCrtDel.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
 						assert(proxyRet);
-						proxyRet = g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+						proxyRet = g_ProxyMove.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, moveBodyLen, FightGameMove_S2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
 						assert(proxyRet);
-						proxyRet = g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+						proxyRet = g_ProxyCrtDel.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, crtBodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
 						assert(proxyRet);
 					}
 				}
@@ -763,13 +775,13 @@ void ForwardMsgToNear(stObjectInfo* object, Grid* grid, RpcID msgID) {
 	GetRangeCell(object->stPos, topCell, bottomCell, leftCell, rightCell);
 
 	switch (msgID) {
-	case FightGameS2C::RPC_DEL_CHARACTER: {
+	case FightGameCrtDel_S2C::RPC_DEL_CHARACTER: {
 		BYTE bodyLen = sizeof(object->uiID);
 		for (uint16_t cy = topCell; cy <= bottomCell; cy++) {
 			for (uint16_t cx = leftCell; cx <= rightCell; cx++) {
 				for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					//if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-						proxyRet = g_Proxy.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_DEL_CHARACTER, object->uiID);
+						proxyRet = g_ProxyCrtDel.DEL_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameCrtDel_S2C::RPC_DEL_CHARACTER, object->uiID);
 						assert(proxyRet);
 					//}
 					// => 클라이언트 동작 분석 결과 삭제 대상에도 delete 메시지를 보내주었어야 했음
@@ -778,14 +790,14 @@ void ForwardMsgToNear(stObjectInfo* object, Grid* grid, RpcID msgID) {
 		}
 		break;
 	}
-	case FightGameS2C::RPC_MOVE_START: {
+	case FightGameMove_S2C::RPC_MOVE_START: {
 		BYTE bodyLen = sizeof(object->uiID) + sizeof(object->byDir) + sizeof(object->stPos.usX) + sizeof(object->stPos.usY);
 		for (uint16_t cy = topCell; cy <= bottomCell; cy++) {
 			for (uint16_t cx = leftCell; cx <= rightCell; cx++) {
 				for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
 						//std::cout << "[Forward Start] X: " << x << ", Y: " << y << std::endl;
-						proxyRet = g_Proxy.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+						proxyRet = g_ProxyMove.MOVE_START(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameMove_S2C::RPC_MOVE_START, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
 						assert(proxyRet);
 					}
 				}
@@ -793,14 +805,14 @@ void ForwardMsgToNear(stObjectInfo* object, Grid* grid, RpcID msgID) {
 		}
 		break;
 	}
-	case FightGameS2C::RPC_MOVE_STOP: {
+	case FightGameMove_S2C::RPC_MOVE_STOP: {
 		BYTE bodyLen = sizeof(object->uiID) + sizeof(object->byDir) + sizeof(object->stPos.usX) + sizeof(object->stPos.usY);
 		for (uint16_t cy = topCell; cy <= bottomCell; cy++) {
 			for (uint16_t cx = leftCell; cx <= rightCell; cx++) {
 				for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
 						//std::cout << "[Forward Stop] X: " << x << ", Y: " << y << std::endl;
-						proxyRet = g_Proxy.MOVE_STOP(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_MOVE_STOP, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+						proxyRet = g_ProxyMove.MOVE_STOP(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameMove_S2C::RPC_MOVE_STOP, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
 						assert(proxyRet);
 					}
 				}
@@ -808,13 +820,13 @@ void ForwardMsgToNear(stObjectInfo* object, Grid* grid, RpcID msgID) {
 		}
 		break;
 	}
-	case FightGameS2C::RPC_ATTACK1: {
+	case FightGameAttack_S2C::RPC_ATTACK1: {
 		BYTE bodyLen = sizeof(object->uiID) + sizeof(object->byDir) + sizeof(object->stPos.usX) + sizeof(object->stPos.usY);
 		for (uint16_t cy = topCell; cy <= bottomCell; cy++) {
 			for (uint16_t cx = leftCell; cx <= rightCell; cx++) {
 				for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-						proxyRet = g_Proxy.ATTACK1(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_ATTACK1, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+						proxyRet = g_ProxyAttack.ATTACK1(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameAttack_S2C::RPC_ATTACK1, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
 						assert(proxyRet);
 					}
 				}
@@ -822,13 +834,13 @@ void ForwardMsgToNear(stObjectInfo* object, Grid* grid, RpcID msgID) {
 		}
 		break;
 	}
-	case FightGameS2C::RPC_ATTACK2: {
+	case FightGameAttack_S2C::RPC_ATTACK2: {
 		BYTE bodyLen = sizeof(object->uiID) + sizeof(object->byDir) + sizeof(object->stPos.usX) + sizeof(object->stPos.usY);
 		for (uint16_t cy = topCell; cy <= bottomCell; cy++) {
 			for (uint16_t cx = leftCell; cx <= rightCell; cx++) {
 				for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-						proxyRet = g_Proxy.ATTACK2(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_ATTACK2, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+						proxyRet = g_ProxyAttack.ATTACK2(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameAttack_S2C::RPC_ATTACK2, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
 						assert(proxyRet);
 					}
 				}
@@ -836,13 +848,13 @@ void ForwardMsgToNear(stObjectInfo* object, Grid* grid, RpcID msgID) {
 		}
 		break;
 	}
-	case FightGameS2C::RPC_ATTACK3: {
+	case FightGameAttack_S2C::RPC_ATTACK3: {
 		BYTE bodyLen = sizeof(object->uiID) + sizeof(object->byDir) + sizeof(object->stPos.usX) + sizeof(object->stPos.usY);
 		for (uint16_t cy = topCell; cy <= bottomCell; cy++) {
 			for (uint16_t cx = leftCell; cx <= rightCell; cx++) {
 				for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
-						proxyRet = g_Proxy.ATTACK3(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_ATTACK3, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
+						proxyRet = g_ProxyAttack.ATTACK3(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameAttack_S2C::RPC_ATTACK3, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
 						assert(proxyRet);
 					}
 				}
@@ -869,9 +881,9 @@ void ForwardCRTMsg(stObjectInfo* object, Grid* grid)
 		for (uint16 cx = leftCell; cx <= rightCell; cx++) {
 			stObjectInfo* nearobj = grid->cells[cy][cx];
 			for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
-				proxyRet = g_Proxy.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
+				proxyRet = g_ProxyCrtDel.CRT_OTHER_CHARACTER(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
 				assert(proxyRet);
-				proxyRet = g_Proxy.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
+				proxyRet = g_ProxyCrtDel.CRT_OTHER_CHARACTER(object->uiID, VALID_PACKET_NUM, bodyLen, FightGameCrtDel_S2C::RPC_CRT_OTHER_CHARACTER, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
 				assert(proxyRet);
 			}
 		}
@@ -896,7 +908,7 @@ void ForwardDmgMsg(stObjectInfo* attacker, stObjectInfo* target, Grid* grid) {
 	for (uint16_t cy = topCellAttaker; cy <= bottomCellAttaker; cy++) {
 		for (uint16_t cx = leftCellAttaker; cx <= rightCellAttaker; cx++) {
 			for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
-				proxyRet = g_Proxy.DAMAGE(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_DAMAGE, attacker->uiID, target->uiID, target->byHP);
+				proxyRet = g_ProxyDamage.DAMAGE(nearPlayer->uiID, VALID_PACKET_NUM, bodyLen, FightGameDamage_S2C::RPC_DAMAGE, attacker->uiID, target->uiID, target->byHP);
 				assert(proxyRet);
 			}
 		}
@@ -911,7 +923,7 @@ void ForwardDmgMsg(stObjectInfo* attacker, stObjectInfo* target, Grid* grid) {
 void SyncPosition(stObjectInfo* player) {
 	bool proxyRet;
 	BYTE bodyLen = sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint16_t);
-	proxyRet = g_Proxy.SYNC(player->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_SYNC, player->uiID, player->stPos.usX, player->stPos.usY);
+	proxyRet = g_ProxyComm.SYNC(player->uiID, VALID_PACKET_NUM, bodyLen, FightGameComm_S2C::RPC_SYNC, player->uiID, player->stPos.usX, player->stPos.usY);
 	assert(proxyRet);
 
 	g_SyncPerLoop++;
@@ -987,7 +999,7 @@ void CreateFighter(HostID hostID) {
 	g_TimeSet.insert({ g_Time, hostID });	// 부호를 변경하여 삽입, 시간 기준 오름차순 정렬
 
 	BYTE bodyLen = sizeof(newObject->uiID) + sizeof(newObject->byDir) + sizeof(newObject->stPos) + sizeof(newObject->byHP);
-	bool proxyRet = g_Proxy.CRT_CHARACTER(newObject->uiID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_CRT_CHARACTER, newObject->uiID, newObject->byDir, newObject->stPos.usX, newObject->stPos.usY, newObject->byHP);
+	bool proxyRet = g_ProxyCrtDel.CRT_CHARACTER(newObject->uiID, VALID_PACKET_NUM, bodyLen, FightGameCrtDel_S2C::RPC_CRT_CHARACTER, newObject->uiID, newObject->byDir, newObject->stPos.usX, newObject->stPos.usY, newObject->byHP);
 	assert(proxyRet);
 
 	if (g_ClientMap.find(hostID) == g_ClientMap.end()) {
@@ -1076,10 +1088,10 @@ void MoveFigter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y) {
 
 #ifdef DUMB_SPACE_DIV
 	// 주변 클라이언트에 START 메시지 포워딩
-	ForwardMsgToNear(player, FightGameS2C::RPC_MOVE_START);
+	ForwardMsgToNear(player, FightGameMove_S2C::RPC_MOVE_START);
 #endif
 #ifdef FIXED_GRID_SPACE_DIV
-	ForwardMsgToNear(player, &g_Grid, FightGameS2C::RPC_MOVE_START);
+	ForwardMsgToNear(player, &g_Grid, FightGameMove_S2C::RPC_MOVE_START);
 #endif 
 }
 void StopFigther(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y) {
@@ -1136,10 +1148,10 @@ void StopFigther(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y) {
 
 #ifdef DUMB_SPACE_DIV
 	// 주변 클라이언트에 STOP 메시지 포워딩
-	ForwardMsgToNear(player, FightGameS2C::RPC_MOVE_STOP);
+	ForwardMsgToNear(player, FightGameMove_S2C::RPC_MOVE_STOP);
 #endif
 #ifdef FIXED_GRID_SPACE_DIV
-	ForwardMsgToNear(player, &g_Grid, FightGameS2C::RPC_MOVE_STOP);
+	ForwardMsgToNear(player, &g_Grid, FightGameMove_S2C::RPC_MOVE_STOP);
 #endif
 }
 
@@ -1206,28 +1218,28 @@ void AttackFighter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y, enAtta
 	switch (atkType) {
 	case enAttackType::ATTACK1: {
 #ifdef DUMB_SPACE_DIV
-		ForwardMsgToNear(player, FightGameS2C::RPC_ATTACK1);
+		ForwardMsgToNear(player, FightGameAttack_S2C::RPC_ATTACK1);
 #endif
 #ifdef FIXED_GRID_SPACE_DIV
-		ForwardMsgToNear(player, &g_Grid, FightGameS2C::RPC_ATTACK1);
+		ForwardMsgToNear(player, &g_Grid, FightGameAttack_S2C::RPC_ATTACK1);
 #endif
 		break;
 	}
 	case enAttackType::ATTACK2: {
 #ifdef DUMB_SPACE_DIV
-		ForwardMsgToNear(player, FightGameS2C::RPC_ATTACK2);
+		ForwardMsgToNear(player, FightGameAttack_S2C::RPC_ATTACK2);
 #endif
 #ifdef FIXED_GRID_SPACE_DIV
-		ForwardMsgToNear(player, &g_Grid, FightGameS2C::RPC_ATTACK2);
+		ForwardMsgToNear(player, &g_Grid, FightGameAttack_S2C::RPC_ATTACK2);
 #endif
 		break;
 	}
 	case enAttackType::ATTACK3: {
 #ifdef DUMB_SPACE_DIV
-		ForwardMsgToNear(player, FightGameS2C::RPC_ATTACK3);
+		ForwardMsgToNear(player, FightGameAttack_S2C::RPC_ATTACK3);
 #endif
 #ifdef FIXED_GRID_SPACE_DIV
-		ForwardMsgToNear(player, &g_Grid, FightGameS2C::RPC_ATTACK3);
+		ForwardMsgToNear(player, &g_Grid, FightGameAttack_S2C::RPC_ATTACK3);
 #endif
 		break;
 	}
@@ -1237,7 +1249,7 @@ void AttackFighter(HostID hostID, BYTE Direction, uint16_t X, uint16_t Y, enAtta
 void ReceiveEcho(HostID hostID, uint32_t time)
 {
 	BYTE bodyLen = sizeof(time);
-	bool proxyRet = g_Proxy.ECHO(hostID, VALID_PACKET_NUM, bodyLen, FightGameS2C::RPC_ECHO, time);
+	bool proxyRet = g_ProxyComm.ECHO(hostID, VALID_PACKET_NUM, bodyLen, FightGameComm_S2C::RPC_ECHO, time);
 	assert(proxyRet);
 
 	auto playerIter = g_ClientMap.find(hostID);
@@ -1283,15 +1295,15 @@ void BatchDeleteClientWork() {
 
 			// 코어에 연결 종료 요청
 			if (!netcoreSide) {
-				g_Proxy.Disconnect(hostID);
+				g_ProxyCrtDel.Disconnect(hostID);
 			}
 
 #ifdef DUMB_SPACE_DIV
-			ForwardMsgToNear(client, FightGameS2C::RPC_DEL_CHARACTER);
+			ForwardMsgToNear(client, FightGameCrtDel_S2C::RPC_DEL_CHARACTER);
 			DeleteFromGrid(client->stPos.usY, client->stPos.usX, client->uiID);
 #endif
 #ifdef FIXED_GRID_SPACE_DIV
-			ForwardMsgToNear(client, &g_Grid, FightGameS2C::RPC_DEL_CHARACTER);
+			ForwardMsgToNear(client, &g_Grid, FightGameCrtDel_S2C::RPC_DEL_CHARACTER);
 			g_Grid.Delete(client);
 #endif 
 

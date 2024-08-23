@@ -19,14 +19,38 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\MMO_Figther\RPC\old\Common_FightGame.cpp" />
-    <ClCompile Include="..\MMO_Figther\RPC\old\Proxy_FightGame.cpp" />
-    <ClCompile Include="..\MMO_Figther\RPC\old\Stub_FightGame.cpp" />
+    <ClCompile Include="..\MMO_Figther\RPC\Common_FightGame.cpp" />
+    <ClCompile Include="..\MMO_Figther\RPC\Common_FightGameAttack.cpp" />
+    <ClCompile Include="..\MMO_Figther\RPC\Common_FightGameCrtDel.cpp" />
+    <ClCompile Include="..\MMO_Figther\RPC\Common_FightGameDamage.cpp" />
+    <ClCompile Include="..\MMO_Figther\RPC\Common_FightGameMove.cpp" />
+    <ClCompile Include="..\MMO_Figther\RPC\Proxy_FightGame.cpp" />
+    <ClCompile Include="..\MMO_Figther\RPC\Proxy_FightGameAttack.cpp" />
+    <ClCompile Include="..\MMO_Figther\RPC\Proxy_FightGameCrtDel.cpp" />
+    <ClCompile Include="..\MMO_Figther\RPC\Proxy_FightGameDamage.cpp" />
+    <ClCompile Include="..\MMO_Figther\RPC\Proxy_FightGameMove.cpp" />
+    <ClCompile Include="..\MMO_Figther\RPC\Stub_FightGame.cpp" />
+    <ClCompile Include="..\MMO_Figther\RPC\Stub_FightGameAttack.cpp" />
+    <ClCompile Include="..\MMO_Figther\RPC\Stub_FightGameCrtDel.cpp" />
+    <ClCompile Include="..\MMO_Figther\RPC\Stub_FightGameDamage.cpp" />
+    <ClCompile Include="..\MMO_Figther\RPC\Stub_FightGameMove.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\MMO_Figther\RPC\old\Common_FightGame.h" />
-    <ClInclude Include="..\MMO_Figther\RPC\old\Proxy_FightGame.h" />
-    <ClInclude Include="..\MMO_Figther\RPC\old\Stub_FightGame.h" />
+    <ClInclude Include="..\MMO_Figther\RPC\Common_FightGame.h" />
+    <ClInclude Include="..\MMO_Figther\RPC\Common_FightGameAttack.h" />
+    <ClInclude Include="..\MMO_Figther\RPC\Common_FightGameCrtDel.h" />
+    <ClInclude Include="..\MMO_Figther\RPC\Common_FightGameDamage.h" />
+    <ClInclude Include="..\MMO_Figther\RPC\Common_FightGameMove.h" />
+    <ClInclude Include="..\MMO_Figther\RPC\Proxy_FightGame.h" />
+    <ClInclude Include="..\MMO_Figther\RPC\Proxy_FightGameAttack.h" />
+    <ClInclude Include="..\MMO_Figther\RPC\Proxy_FightGameCrtDel.h" />
+    <ClInclude Include="..\MMO_Figther\RPC\Proxy_FightGameDamage.h" />
+    <ClInclude Include="..\MMO_Figther\RPC\Proxy_FightGameMove.h" />
+    <ClInclude Include="..\MMO_Figther\RPC\Stub_FightGame.h" />
+    <ClInclude Include="..\MMO_Figther\RPC\Stub_FightGameAttack.h" />
+    <ClInclude Include="..\MMO_Figther\RPC\Stub_FightGameCrtDel.h" />
+    <ClInclude Include="..\MMO_Figther\RPC\Stub_FightGameDamage.h" />
+    <ClInclude Include="..\MMO_Figther\RPC\Stub_FightGameMove.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

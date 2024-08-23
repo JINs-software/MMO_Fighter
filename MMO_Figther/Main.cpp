@@ -3,8 +3,18 @@
 #include "EventHandler.h"
 #include "Configuration.h"
 
-#include "RPC/Common_FightGame.cpp"
-#include "RPC/Proxy_FightGame.cpp"
+//#include "RPC/Common_FightGame.cpp"
+//#include "RPC/Proxy_FightGame.cpp"
+#include "RPC/Common_FightGameCrtDel.cpp"
+#include "RPC/Common_FightGameMove.cpp"
+#include "RPC/Common_FightGameAttack.cpp"
+#include "RPC/Common_FightGameDamage.cpp"
+#include "RPC/Proxy_FightGameCrtDel.cpp"
+#include "RPC/Proxy_FightGameMove.cpp"
+#include "RPC/Proxy_FightGameAttack.cpp"
+#include "RPC/Proxy_FightGameDamage.cpp"
+#include "RPC/Proxy_FightGameComm.cpp"
+
 #include "Stub.h"
 
 #pragma comment (lib, "winmm")
@@ -32,7 +42,12 @@ class FighterGameBatch : public JNetBatchProcess
 };
 
 FighterGameBatch fightGameBatch;
-FightGameS2C::Proxy g_Proxy;
+//FightGameS2C::Proxy g_Proxy;
+FightGameCrtDel_S2C::Proxy g_ProxyCrtDel;
+FightGameMove_S2C::Proxy g_ProxyMove;
+FightGameAttack_S2C::Proxy g_ProxyAttack;
+FightGameDamage_S2C::Proxy g_ProxyDamage;
+FightGameComm_S2C::Proxy g_ProxyComm;
 Stub g_Stub;
 EventHandler g_eventHnd;
 JNetCoreServer* g_JNetServer;
@@ -51,7 +66,10 @@ void Init() {
 	g_JNetServer = new JNetCoreServer(true);
 
 	g_JNetServer->AttachEventHandler(&g_eventHnd);
-	g_JNetServer->AttachProxy(&g_Proxy, VALID_PACKET_NUM);
+	g_JNetServer->AttachProxy(&g_ProxyCrtDel, VALID_PACKET_NUM);
+	g_JNetServer->AttachProxy(&g_ProxyMove, VALID_PACKET_NUM);
+	g_JNetServer->AttachProxy(&g_ProxyAttack, VALID_PACKET_NUM);
+	g_JNetServer->AttachProxy(&g_ProxyDamage, VALID_PACKET_NUM);
 	g_JNetServer->AttachStub(&g_Stub, VALID_PACKET_NUM);
 	g_JNetServer->AttachBatchProcess(&fightGameBatch);
 

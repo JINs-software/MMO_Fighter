@@ -142,6 +142,40 @@
           ]
         },
         {
+          "Message": "MOVE_START",
+          "Dir": "S2C",
+          "Param": [
+            {
+              "Type": "BYTE",
+              "Name": "byCode"
+            },
+            {
+              "Type": "BYTE",
+              "Name": "bySize"
+            },
+            {
+              "Type": "BYTE",
+              "Name": "byType"
+            },
+            {
+              "Type": "uint32_t",
+              "Name": "ID"
+            },
+            {
+              "Type": "BYTE",
+              "Name": "Dir"
+            },
+            {
+              "Type": "uint16_t",
+              "Name": "X"
+            },
+            {
+              "Type": "uint16_t",
+              "Name": "Y"
+            }
+          ]
+        },
+        {
           "Message": "MOVE_STOP",
           "Dir": "C2S",
           "Param": [
@@ -156,6 +190,40 @@
             {
               "Type": "BYTE",
               "Name": "byType"
+            },
+            {
+              "Type": "BYTE",
+              "Name": "Dir"
+            },
+            {
+              "Type": "uint16_t",
+              "Name": "X"
+            },
+            {
+              "Type": "uint16_t",
+              "Name": "Y"
+            }
+          ]
+        },
+        {
+          "Message": "MOVE_STOP",
+          "Dir": "S2C",
+          "Param": [
+            {
+              "Type": "BYTE",
+              "Name": "byCode"
+            },
+            {
+              "Type": "BYTE",
+              "Name": "bySize"
+            },
+            {
+              "Type": "BYTE",
+              "Name": "byType"
+            },
+            {
+              "Type": "uint32_t",
+              "Name": "ID"
             },
             {
               "Type": "BYTE",
@@ -208,6 +276,40 @@
           ]
         },
         {
+          "Message": "ATTACK1",
+          "Dir": "S2C",
+          "Param": [
+            {
+              "Type": "BYTE",
+              "Name": "byCode"
+            },
+            {
+              "Type": "BYTE",
+              "Name": "bySize"
+            },
+            {
+              "Type": "BYTE",
+              "Name": "byType"
+            },
+            {
+              "Type": "uint32_t",
+              "Name": "ID"
+            },
+            {
+              "Type": "BYTE",
+              "Name": "Dir"
+            },
+            {
+              "Type": "uint16_t",
+              "Name": "X"
+            },
+            {
+              "Type": "uint16_t",
+              "Name": "Y"
+            }
+          ]
+        },
+        {
           "Message": "ATTACK2",
           "Dir": "C2S",
           "Param": [
@@ -238,6 +340,40 @@
           ]
         },
         {
+          "Message": "ATTACK2",
+          "Dir": "S2C",
+          "Param": [
+            {
+              "Type": "BYTE",
+              "Name": "byCode"
+            },
+            {
+              "Type": "BYTE",
+              "Name": "bySize"
+            },
+            {
+              "Type": "BYTE",
+              "Name": "byType"
+            },
+            {
+              "Type": "uint32_t",
+              "Name": "ID"
+            },
+            {
+              "Type": "BYTE",
+              "Name": "Dir"
+            },
+            {
+              "Type": "uint16_t",
+              "Name": "X"
+            },
+            {
+              "Type": "uint16_t",
+              "Name": "Y"
+            }
+          ]
+        },
+        {
           "Message": "ATTACK3",
           "Dir": "C2S",
           "Param": [
@@ -252,6 +388,40 @@
             {
               "Type": "BYTE",
               "Name": "byType"
+            },
+            {
+              "Type": "BYTE",
+              "Name": "Dir"
+            },
+            {
+              "Type": "uint16_t",
+              "Name": "X"
+            },
+            {
+              "Type": "uint16_t",
+              "Name": "Y"
+            }
+          ]
+        },
+        {
+          "Message": "ATTACK3",
+          "Dir": "S2C",
+          "Param": [
+            {
+              "Type": "BYTE",
+              "Name": "byCode"
+            },
+            {
+              "Type": "BYTE",
+              "Name": "bySize"
+            },
+            {
+              "Type": "BYTE",
+              "Name": "byType"
+            },
+            {
+              "Type": "uint32_t",
+              "Name": "ID"
             },
             {
               "Type": "BYTE",
@@ -300,6 +470,86 @@
             {
               "Type": "BYTE",
               "Name": "targetHP"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Namespace": "FightGameComm",
+      "ID": 251,
+      "Defines": [
+        {
+          "Message": "SYNC",
+          "Dir": "S2C",
+          "Param": [
+            {
+              "Type": "BYTE",
+              "Name": "byCode"
+            },
+            {
+              "Type": "BYTE",
+              "Name": "bySize"
+            },
+            {
+              "Type": "BYTE",
+              "Name": "byType"
+            },
+            {
+              "Type": "uint32_t",
+              "Name": "ID"
+            },
+            {
+              "Type": "uint16_t",
+              "Name": "X"
+            },
+            {
+              "Type": "uint16_t",
+              "Name": "Y"
+            }
+          ]
+        },
+        {
+          "Message": "ECHO",
+          "Dir": "C2S",
+          "Param": [
+            {
+              "Type": "BYTE",
+              "Name": "byCode"
+            },
+            {
+              "Type": "BYTE",
+              "Name": "bySize"
+            },
+            {
+              "Type": "BYTE",
+              "Name": "byType"
+            },
+            {
+              "Type": "uint32_t",
+              "Name": "Time"
+            }
+          ]
+        },
+        {
+          "Message": "ECHO",
+          "Dir": "S2C",
+          "Param": [
+            {
+              "Type": "BYTE",
+              "Name": "byCode"
+            },
+            {
+              "Type": "BYTE",
+              "Name": "bySize"
+            },
+            {
+              "Type": "BYTE",
+              "Name": "byType"
+            },
+            {
+              "Type": "uint32_t",
+              "Name": "Time"
             }
           ]
         }
