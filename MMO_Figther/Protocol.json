@@ -1,355 +1,479 @@
 {
-  "COMPILE_MODE": "RPC",
-  "SERVER_OUTPUT_DIR": "C:\\Users\\HurJin\\0. GameServerStudy\\1. Project\\MMO_Fighter\\MMO_Figther\\RPC",
-  "CLIENT_OUTPUT_DIR": "",
-  "JPD": [
-    {
-      "Namespace": "FightGameCrtDel",
-      "ID": 0,
-      "Defines": [
+    "SERVER_COMPILE_MODE": "RPC",
+    "SERVER_OUTPUT_DIR": "C:\\Users\\HurJin\\0. GameServerStudy\\1. Project\\MMO_Fighter\\MMO_Figther",
+    "CLIENT_COMPILE_MODE": "RPC",
+    "CLIENT_OUTPUT_DIR": "C:\\Users\\HurJin\\Unity\\MMO_FIGHTER_CLIENT\\Assets\\Script\\RPC",
+    "JPD_Enums": [
         {
-          "Message": "CRT_CHARACTER",
-          "Dir": "S2C",
-          "Param": [
-            {
-              "Type": "uint32_t",
-              "Name": "ID"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "Dir"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "X"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "Y"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "HP"
-            }
-          ]
-        },
-        {
-          "Message": "CRT_OTHER_CHARACTER",
-          "Dir": "S2C",
-          "Param": [
-            {
-              "Type": "uint32_t",
-              "Name": "ID"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "Dir"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "X"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "Y"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "HP"
-            }
-          ]
-        },
-        {
-          "Message": "DEL_CHARACTER",
-          "Dir": "S2C",
-          "Param": [
-            {
-              "Type": "uint32_t",
-              "Name": "ID"
-            }
-          ]
+            "Name": "enMOVE_DIR",
+            "Fields": [
+                "MOVE_DIR_LL",
+                "MOVE_DIR_LU",
+                "MOVE_DIR_UU",
+                "MOVE_DIR_RU",
+                "MOVE_DIR_RR",
+                "MOVE_DIR_RD",
+                "MOVE_DIR_DD",
+                "MOVE_DIR_LD"
+            ]
         }
-      ]
-    },
-    {
-      "Namespace": "FightGameMove",
-      "ID": 10,
-      "Defines": [
+    ],
+    "JPD_ConstGroups": [
         {
-          "Message": "MOVE_START",
-          "Dir": "C2S",
-          "Param": [
-            {
-              "Type": "BYTE",
-              "Name": "Dir"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "X"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "Y"
-            }
-          ]
-        },
-        {
-          "Message": "MOVE_START",
-          "Dir": "S2C",
-          "Param": [
-            {
-              "Type": "uint32_t",
-              "Name": "ID"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "Dir"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "X"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "Y"
-            }
-          ]
-        },
-        {
-          "Message": "MOVE_STOP",
-          "Dir": "C2S",
-          "Param": [
-            {
-              "Type": "BYTE",
-              "Name": "Dir"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "X"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "Y"
-            }
-          ]
-        },
-        {
-          "Message": "MOVE_STOP",
-          "Dir": "S2C",
-          "Param": [
-            {
-              "Type": "uint32_t",
-              "Name": "ID"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "Dir"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "X"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "Y"
-            }
-          ]
+            "Name": "PROTOCOL_CONSTANT",
+            "Consts": [
+                {
+                    "Type": "INT",
+                    "Name": "MAX_OF_PLAYER_NAME_LEN",
+                    "Value": "32"
+                },
+                {
+                    "Type": "INT",
+                    "Name": "MAX_OF_ROOM_NAME_LEN",
+                    "Value": "50"
+                },
+                {
+                    "Type": "INT",
+                    "Name": "END_OF_LIST",
+                    "Value": "255"
+                },
+                {
+                    "Type": "INT",
+                    "Name": "MAX_OF_PLAYER_IN_ROOM",
+                    "Value": "4"
+                },
+                {
+                    "Type": "INT",
+                    "Name": "MAX_OF_MATCH_ROOM",
+                    "Value": "100"
+                },
+                {
+                    "Type": "INT",
+                    "Name": "MAX_OF_COLLIDER_ELEMENTS",
+                    "Value": "100"
+                }
+            ]
         }
-      ]
-    },
-    {
-      "Namespace": "FightGameAttack",
-      "ID": 20,
-      "Defines": [
+    ],
+    "JPD_Namespaces": [
         {
-          "Message": "ATTACK1",
-          "Dir": "C2S",
-          "Param": [
-            {
-              "Type": "BYTE",
-              "Name": "Dir"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "X"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "Y"
-            }
-          ]
+            "Namespace": "FightGameCrtDel",
+            "ID": "0",
+            "Defines": [
+                {
+                    "Message": "CRT_CHARACTER",
+                    "ID": "0",
+                    "Dir": "S2C",
+                    "Param": [
+                        {
+                            "Type": "UINT32",
+                            "Name": "ID",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "BYTE",
+                            "Name": "Dir",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "X",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "Y",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "BYTE",
+                            "Name": "HP",
+                            "FixedLenOfArray": ""
+                        }
+                    ]
+                },
+                {
+                    "Message": "CRT_OTHER_CHARACTER",
+                    "ID": "1",
+                    "Dir": "S2C",
+                    "Param": [
+                        {
+                            "Type": "UINT32",
+                            "Name": "ID",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "BYTE",
+                            "Name": "Dir",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "X",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "Y",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "BYTE",
+                            "Name": "HP",
+                            "FixedLenOfArray": ""
+                        }
+                    ]
+                },
+                {
+                    "Message": "DEL_CHARACTER",
+                    "ID": "2",
+                    "Dir": "S2C",
+                    "Param": [
+                        {
+                            "Type": "UINT32",
+                            "Name": "ID",
+                            "FixedLenOfArray": ""
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "Message": "ATTACK1",
-          "Dir": "S2C",
-          "Param": [
-            {
-              "Type": "uint32_t",
-              "Name": "ID"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "Dir"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "X"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "Y"
-            }
-          ]
+            "Namespace": "FightGameMove",
+            "ID": "10",
+            "Defines": [
+                {
+                    "Message": "MOVE_START",
+                    "ID": "10",
+                    "Dir": "C2S",
+                    "Param": [
+                        {
+                            "Type": "BYTE",
+                            "Name": "Dir",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "X",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "Y",
+                            "FixedLenOfArray": ""
+                        }
+                    ]
+                },
+                {
+                    "Message": "MOVE_START",
+                    "ID": "11",
+                    "Dir": "S2C",
+                    "Param": [
+                        {
+                            "Type": "UINT32",
+                            "Name": "ID",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "BYTE",
+                            "Name": "Dir",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "X",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "Y",
+                            "FixedLenOfArray": ""
+                        }
+                    ]
+                },
+                {
+                    "Message": "MOVE_STOP",
+                    "ID": "12",
+                    "Dir": "C2S",
+                    "Param": [
+                        {
+                            "Type": "BYTE",
+                            "Name": "Dir",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "X",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "Y",
+                            "FixedLenOfArray": ""
+                        }
+                    ]
+                },
+                {
+                    "Message": "MOVE_STOP",
+                    "ID": "13",
+                    "Dir": "S2C",
+                    "Param": [
+                        {
+                            "Type": "UINT32",
+                            "Name": "ID",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "BYTE",
+                            "Name": "Dir",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "X",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "Y",
+                            "FixedLenOfArray": ""
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "Message": "ATTACK2",
-          "Dir": "C2S",
-          "Param": [
-            {
-              "Type": "BYTE",
-              "Name": "Dir"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "X"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "Y"
-            }
-          ]
+            "Namespace": "FightGameAttack",
+            "ID": "20",
+            "Defines": [
+                {
+                    "Message": "ATTACK1",
+                    "ID": "20",
+                    "Dir": "C2S",
+                    "Param": [
+                        {
+                            "Type": "BYTE",
+                            "Name": "Dir",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "X",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "Y",
+                            "FixedLenOfArray": ""
+                        }
+                    ]
+                },
+                {
+                    "Message": "ATTACK1",
+                    "ID": "21",
+                    "Dir": "S2C",
+                    "Param": [
+                        {
+                            "Type": "UINT32",
+                            "Name": "ID",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "BYTE",
+                            "Name": "Dir",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "X",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "Y",
+                            "FixedLenOfArray": ""
+                        }
+                    ]
+                },
+                {
+                    "Message": "ATTACK2",
+                    "ID": "22",
+                    "Dir": "C2S",
+                    "Param": [
+                        {
+                            "Type": "BYTE",
+                            "Name": "Dir",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "X",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "Y",
+                            "FixedLenOfArray": ""
+                        }
+                    ]
+                },
+                {
+                    "Message": "ATTACK2",
+                    "ID": "23",
+                    "Dir": "S2C",
+                    "Param": [
+                        {
+                            "Type": "UINT32",
+                            "Name": "ID",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "BYTE",
+                            "Name": "Dir",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "X",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "Y",
+                            "FixedLenOfArray": ""
+                        }
+                    ]
+                },
+                {
+                    "Message": "ATTACK3",
+                    "ID": "24",
+                    "Dir": "C2S",
+                    "Param": [
+                        {
+                            "Type": "BYTE",
+                            "Name": "Dir",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "X",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "Y",
+                            "FixedLenOfArray": ""
+                        }
+                    ]
+                },
+                {
+                    "Message": "ATTACK3",
+                    "ID": "25",
+                    "Dir": "S2C",
+                    "Param": [
+                        {
+                            "Type": "UINT32",
+                            "Name": "ID",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "BYTE",
+                            "Name": "Dir",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "X",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "Y",
+                            "FixedLenOfArray": ""
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "Message": "ATTACK2",
-          "Dir": "S2C",
-          "Param": [
-            {
-              "Type": "uint32_t",
-              "Name": "ID"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "Dir"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "X"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "Y"
-            }
-          ]
+            "Namespace": "FightGameDamage",
+            "ID": "30",
+            "Defines": [
+                {
+                    "Message": "DAMAGE",
+                    "ID": "30",
+                    "Dir": "S2C",
+                    "Param": [
+                        {
+                            "Type": "UINT32",
+                            "Name": "attker",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT32",
+                            "Name": "target",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "BYTE",
+                            "Name": "targetHP",
+                            "FixedLenOfArray": ""
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "Message": "ATTACK3",
-          "Dir": "C2S",
-          "Param": [
-            {
-              "Type": "BYTE",
-              "Name": "Dir"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "X"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "Y"
-            }
-          ]
-        },
-        {
-          "Message": "ATTACK3",
-          "Dir": "S2C",
-          "Param": [
-            {
-              "Type": "uint32_t",
-              "Name": "ID"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "Dir"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "X"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "Y"
-            }
-          ]
+            "Namespace": "FightGameComm",
+            "ID": "251",
+            "Defines": [
+                {
+                    "Message": "SYNC",
+                    "ID": "251",
+                    "Dir": "S2C",
+                    "Param": [
+                        {
+                            "Type": "UINT32",
+                            "Name": "ID",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "X",
+                            "FixedLenOfArray": ""
+                        },
+                        {
+                            "Type": "UINT16",
+                            "Name": "Y",
+                            "FixedLenOfArray": ""
+                        }
+                    ]
+                },
+                {
+                    "Message": "ECHO",
+                    "ID": "252",
+                    "Dir": "C2S",
+                    "Param": [
+                        {
+                            "Type": "UINT32",
+                            "Name": "Time",
+                            "FixedLenOfArray": ""
+                        }
+                    ]
+                },
+                {
+                    "Message": "ECHO",
+                    "ID": "253",
+                    "Dir": "S2C",
+                    "Param": [
+                        {
+                            "Type": "UINT32",
+                            "Name": "Time",
+                            "FixedLenOfArray": ""
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    },
-    {
-      "Namespace": "FightGameDamage",
-      "ID": 30,
-      "Defines": [
-        {
-          "Message": "DAMAGE",
-          "Dir": "S2C",
-          "Param": [
-            {
-              "Type": "uint32_t",
-              "Name": "attker"
-            },
-            {
-              "Type": "uint32_t",
-              "Name": "target"
-            },
-            {
-              "Type": "BYTE",
-              "Name": "targetHP"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "Namespace": "FightGameComm",
-      "ID": 251,
-      "Defines": [
-        {
-          "Message": "SYNC",
-          "Dir": "S2C",
-          "Param": [
-            {
-              "Type": "uint32_t",
-              "Name": "ID"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "X"
-            },
-            {
-              "Type": "uint16_t",
-              "Name": "Y"
-            }
-          ]
-        },
-        {
-          "Message": "ECHO",
-          "Dir": "C2S",
-          "Param": [
-            {
-              "Type": "uint32_t",
-              "Name": "Time"
-            }
-          ]
-        },
-        {
-          "Message": "ECHO",
-          "Dir": "S2C",
-          "Param": [
-            {
-              "Type": "uint32_t",
-              "Name": "Time"
-            }
-          ]
-        }
-      ]
-    }
-  ]
+    ]
 }

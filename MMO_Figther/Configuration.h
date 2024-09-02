@@ -4,6 +4,10 @@
 #define SERVER_PORT 12121
 #define MAXIMUM_FIGHTER 20000
 
+//#define TIME_OUT_CHECK
+
+#define CLIENT_DEBUG
+
 //#define DEFAULT_POOL
 #define JINI_POOL
 
@@ -73,6 +77,7 @@
 /*
 * [공격범위]
 */
+
 #define dfATTACK1_RANGE_X		80
 #define dfATTACK2_RANGE_X		90
 #define dfATTACK3_RANGE_X		100

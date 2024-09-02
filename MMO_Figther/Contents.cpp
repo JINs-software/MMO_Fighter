@@ -702,38 +702,22 @@ void GridResetInterestSpace(stPoint beforePos, stObjectInfo* object, Grid* grid,
 					for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 						if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
 							proxyRet = g_ProxyCrtDel.CRT_OTHER_CHARACTER(nearPlayer->uiID, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
-							assert(proxyRet);
 							proxyRet = g_ProxyMove.MOVE_START(nearPlayer->uiID, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
-							assert(proxyRet);
 							proxyRet = g_ProxyCrtDel.CRT_OTHER_CHARACTER(object->uiID, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
-							assert(proxyRet);
 						}
 					}
 				}
 			}
 		}
 	}
-	else if (crtRow.first) {	// ㅡ 생성
-		//for (uint16 cx = leftCell; cx <= rightCell; cx++) {
-		//	uint16 cy = crtRow.second;
-		//	for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
-		//		if (nearPlayer->uiID != object->uiID) {
-		//			g_ProxyCrtDel.CRT_OTHER_CHARACTER(nearPlayer->uiID, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
-		//			g_ProxyMove.MOVE_START(nearPlayer->uiID, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
-		//			g_ProxyCrtDel.CRT_OTHER_CHARACTER(object->uiID, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
-		//		}
-		//	}
-		//}
+	else if (crtRow.first) {	
 		for (uint16 cx = leftCell; cx <= rightCell; cx++) {
 			for (uint16 cy = crtRow.second.first; cy <= crtRow.second.second; cy++) {
 				for (stObjectInfo* nearPlayer = grid->cells[cy][cx]; nearPlayer != nullptr; nearPlayer = nearPlayer->nextGridObj) {
 					if (nearPlayer->uiID != object->uiID) {		// 삭제 대상에는 포워딩 대상 제외
 						proxyRet = g_ProxyCrtDel.CRT_OTHER_CHARACTER(nearPlayer->uiID, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY, object->byHP);
-						assert(proxyRet);
 						proxyRet = g_ProxyMove.MOVE_START(nearPlayer->uiID, object->uiID, object->byDir, object->stPos.usX, object->stPos.usY);
-						assert(proxyRet);
 						proxyRet = g_ProxyCrtDel.CRT_OTHER_CHARACTER(object->uiID, nearPlayer->uiID, nearPlayer->byDir, nearPlayer->stPos.usX, nearPlayer->stPos.usY, nearPlayer->byHP);
-						assert(proxyRet);
 					}
 				}
 			}
@@ -967,7 +951,12 @@ void CreateFighter(HostID hostID) {
 	stObjectInfo* newObject = reinterpret_cast<stObjectInfo*>(g_ObjectPool.AllocMem());
 #endif // JINI_POOL
 	newObject->uiID = hostID;
+#if defined(CLIENT_DEBUG)
+	newObject->stPos.usX = 0;
+	newObject->stPos.usY = 0;
+#else
 	newObject->stPos = GetRandomPosition();
+#endif
 	newObject->byHP = dfDEAFAULT_INIT_HP;
 	newObject->byDir = rand() % 2 == 0 ? dfPACKET_MOVE_DIR_LL : dfPACKET_MOVE_DIR_RR;
 

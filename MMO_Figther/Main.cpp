@@ -3,8 +3,6 @@
 #include "EventHandler.h"
 #include "Configuration.h"
 
-//#include "RPC/Common_FightGame.cpp"
-//#include "RPC/Proxy_FightGame.cpp"
 #include "RPC/Common_FightGameCrtDel.cpp"
 #include "RPC/Common_FightGameMove.cpp"
 #include "RPC/Common_FightGameAttack.cpp"
@@ -17,6 +15,16 @@
 #include "RPC/Proxy_FightGameComm.cpp"
 
 #include "Stub.h"
+
+FightGameCrtDel_S2C::Proxy g_ProxyCrtDel;
+FightGameMove_S2C::Proxy g_ProxyMove;
+FightGameAttack_S2C::Proxy g_ProxyAttack;
+FightGameDamage_S2C::Proxy g_ProxyDamage;
+FightGameComm_S2C::Proxy g_ProxyComm;
+StubMove g_StubMove;
+StubAttack g_StubAttack;
+StubComm g_StubComm;
+
 
 #pragma comment (lib, "winmm")
 
@@ -32,9 +40,10 @@ class FighterGameBatch : public JNetBatchProcess
 		BatchDeleteClientWork();
 
 		BatchSyncLog();
+#if defined(TIME_OUT_CHECK)
 		BatchTimeOutCheck();
+#endif
 		BatchAttackWork();
-		//BatchDeleteClientWork();
 		BatchMoveWork(g_LoopDelta);
 #if defined(CONSOLE_LOG)
 		BatchPrintLog();
@@ -43,15 +52,15 @@ class FighterGameBatch : public JNetBatchProcess
 };
 
 FighterGameBatch fightGameBatch;
-//FightGameS2C::Proxy g_Proxy;
-FightGameCrtDel_S2C::Proxy g_ProxyCrtDel;
-FightGameMove_S2C::Proxy g_ProxyMove;
-FightGameAttack_S2C::Proxy g_ProxyAttack;
-FightGameDamage_S2C::Proxy g_ProxyDamage;
-FightGameComm_S2C::Proxy g_ProxyComm;
-StubMove g_StubMove;
-StubAttack g_StubAttack;
-StubComm g_StubComm;
+
+//FightGameCrtDel_S2C::Proxy g_ProxyCrtDel;
+//FightGameMove_S2C::Proxy g_ProxyMove;
+//FightGameAttack_S2C::Proxy g_ProxyAttack;
+//FightGameDamage_S2C::Proxy g_ProxyDamage;
+//FightGameComm_S2C::Proxy g_ProxyComm;
+//StubMove g_StubMove;
+//StubAttack g_StubAttack;
+//StubComm g_StubComm;
 
 EventHandler g_eventHnd;
 JNetCoreServer* g_JNetServer;
@@ -64,7 +73,6 @@ int main() {
 	g_JNetServer->Start(SLEEP_TIME_MS);
 	std::cout << "Server Start!" << std::endl;
 }
-
 
 void Init() {
 	g_JNetServer = new JNetCoreServer(false);

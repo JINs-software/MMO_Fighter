@@ -1,5 +1,4 @@
 #include "Stub.h"
-//#include "RPC/Stub_FightGame.cpp"
 
 #include "RPC/Stub_FightGameCrtDel.cpp"
 #include "RPC/Stub_FightGameMove.cpp"
@@ -34,3 +33,5 @@ JPDEF_FightGameComm_C2S_ECHO(StubComm) {
 	ReceiveEcho(remote, Time);
 	return true;
 }
+
+
